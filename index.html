@@ -84,6 +84,7 @@
             font-weight: 300;
             line-height: 1.5;
             text-align: left;
+            transition: transform 0.4s ease-out;
         }
 
         .user-text { 
@@ -94,6 +95,10 @@
             color: #666;
             opacity: 0;
             animation: fadeIn 2s forwards;
+        }
+        
+        .smooth-transition {
+            transition: all 0.3s ease-out;
         }
 
         @keyframes fadeIn {
@@ -135,20 +140,32 @@
 
                 const userText = hiddenInput.value.trim();
                 
+                // Add transition class to make text clearing smooth
+                displayedText.classList.add('smooth-transition');
+                
                 // Create user message element
                 const userItem = document.createElement('div');
                 userItem.classList.add('conversation-item', 'user-text');
                 userItem.textContent = userText;
                 
-                // Clear input
-                hiddenInput.value = '';
-                displayedText.textContent = '';
+                // Smoothly transition the input text out
+                displayedText.style.opacity = '0';
                 
-                // Add the message to conversation
-                conversation.prepend(userItem);
+                // Wait for transition to complete before clearing
+                setTimeout(() => {
+                    // Clear input
+                    hiddenInput.value = '';
+                    displayedText.textContent = '';
+                    
+                    // Reset opacity for next input
+                    displayedText.style.opacity = '1';
+                    
+                    // Add the message to conversation
+                    conversation.prepend(userItem);
+                }, 300);
 
-                const randomDelay = Math.floor(Math.random() * 3000) + 1000;
-                await new Promise(resolve => setTimeout(resolve, randomDelay));
+                const randomDelay = Math.floor(Math.random() * 2000) + 1000;
+                await new Promise(resolve => setTimeout(resolve, randomDelay + 300));
 
                 try {
                     const response = await fetch('/api/mirror', {
