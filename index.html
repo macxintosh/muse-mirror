@@ -21,7 +21,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-end;
             overflow: hidden;
         }
 
@@ -31,12 +31,13 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-end;
+            padding-bottom: 20vh;
         }
 
         #input-container {
             position: relative;
-            margin-bottom: 12px;
+            margin-top: 40px;
         }
 
         #display-area {
@@ -84,19 +85,23 @@
             letter-spacing: -0.01em;
             font-weight: 300;
             line-height: 1.5;
+        }
+
+        .user-text { 
+            color: #333;
+        }
+        
+        .response-text { 
+            color: #666;
             opacity: 0;
             animation: fadeIn 2s forwards;
         }
 
-        .user-text { color: #333; }
-        .response-text { color: #666; }
-
         #conversation {
             display: flex;
-            flex-direction: column;
+            flex-direction: column-reverse;
             overflow-y: auto;
-            padding-top: 20px;
-            padding-bottom: 20px;
+            max-height: 60vh;
         }
 
         @keyframes fadeIn {
@@ -143,7 +148,7 @@
                 const userItem = document.createElement('div');
                 userItem.classList.add('conversation-item', 'user-text');
                 userItem.textContent = userText;
-                conversation.appendChild(userItem);
+                conversation.prepend(userItem);
 
                 hiddenInput.value = '';
                 displayedText.textContent = '';
@@ -163,9 +168,7 @@
                     const responseItem = document.createElement('div');
                     responseItem.classList.add('conversation-item', 'response-text');
                     responseItem.textContent = data.reply;
-                    conversation.appendChild(responseItem);
-
-                    conversation.scrollTop = conversation.scrollHeight;
+                    conversation.prepend(responseItem);
 
                 } catch (error) {
                     console.error('Error:', error);
