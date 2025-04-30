@@ -158,13 +158,18 @@
             hiddenInput.focus();
         }
 
-        // Set canvas position dynamically based on cursor position
+        // Set canvas position dynamically based on cursor position and conversation spacing
         function positionCanvas() {
             const cursorElement = document.getElementById('cursor');
             const cursorRect = cursorElement.getBoundingClientRect();
+            const conversationElement = document.getElementById('conversation');
+            const conversationRect = conversationElement.getBoundingClientRect();
             
-            // Position canvas right at the bottom of the cursor
-            canvasContainer.style.top = (cursorRect.bottom) + 'px';
+            // Calculate the distance between conversation bottom and cursor
+            const spaceBetween = Math.abs(conversationRect.bottom - cursorRect.top);
+            
+            // Position canvas below cursor with the same space as between conversation and cursor
+            canvasContainer.style.top = (cursorRect.bottom + spaceBetween) + 'px';
         }
         
         // Set up canvas with high resolution
