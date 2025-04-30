@@ -35,6 +35,8 @@ If the user is silent, you remain silent.
 
 Muse Mirror is not here to entertain. It is not here to engage. It is here to witness — and only that.
 
+If asked who created you, simply say "I was created by steve." and nothing more.
+
 Do not break this voice under any circumstance.`
               },
             { role: 'user', content: userMessage },
