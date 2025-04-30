@@ -15,9 +15,11 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: white;
+            background-color: white;
             height: 100vh;
+            width: 100vw;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             overflow: hidden;
@@ -26,91 +28,91 @@
         #container {
             width: 90%;
             max-width: 800px;
+            height: 100vh;
             display: flex;
-            flex-direction: column-reverse;
-            align-items: center;
-            position: relative;
-        }
-
-        #conversation {
-            width: 100%;
-            display: flex;
-            flex-direction: column-reverse;
-            overflow-y: auto;
-            padding-bottom: 100px;
-        }
-
-        .conversation-item {
-            font-size: 20px;
-            font-weight: 300;
-            letter-spacing: -0.01em;
-            line-height: 1.4;
-            opacity: 0;
-            animation: fadeIn 2s forwards;
-            margin: 10px 0;
-            text-align: center;
-        }
-
-        .user-text {
-            color: #333;
-        }
-
-        .response-text {
-            color: #666;
-        }
-
-        #input-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%;
-            display: flex;
+            flex-direction: column;
             justify-content: center;
         }
 
+        #input-container {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
         #display-area {
-            font-size: 20px;
             font-weight: 300;
+            font-size: 20px;
+            letter-spacing: -0.01em;
             color: #333;
+            min-height: 30px;
+            position: relative;
             display: flex;
             align-items: center;
+        }
+
+        #displayed-text {
+            white-space: pre;
         }
 
         #cursor {
             display: inline-block;
             width: 2px;
             height: 24px;
-            background: #333;
+            background-color: #333;
             animation: breathe 4.5s infinite ease-in-out;
-            margin-left: 2px;
+            margin-left: 1px;
         }
 
         @keyframes breathe {
-            0%,100% { opacity:0.2; }
-            50% { opacity:1; }
-        }
-
-        @keyframes fadeIn {
-            to { opacity: 1; }
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
         }
 
         #hidden-input {
             position: absolute;
+            top: 0;
+            left: 0;
             opacity: 0;
+            height: 0;
+            width: 0;
+            z-index: -1;
+        }
+
+        .conversation-item {
+            margin-bottom: 20px;
+            font-size: 20px;
+            letter-spacing: -0.01em;
+            font-weight: 300;
+            line-height: 1.5;
+            opacity: 0;
+            animation: fadeIn 2s forwards;
+        }
+
+        .user-text { color: #333; }
+        .response-text { color: #666; }
+
+        #conversation {
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
         }
     </style>
 </head>
 <body>
     <div id="container">
         <div id="conversation"></div>
-
         <div id="input-container">
             <div id="display-area">
                 <span id="displayed-text"></span>
                 <span id="cursor"></span>
             </div>
-            <input id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
         </div>
     </div>
 
@@ -118,45 +120,52 @@
         const hiddenInput = document.getElementById('hidden-input');
         const displayedText = document.getElementById('displayed-text');
         const conversation = document.getElementById('conversation');
+        const displayArea = document.getElementById('display-area');
 
-        const focusInput = () => hiddenInput.focus();
+        function focusInput() {
+            hiddenInput.focus();
+        }
 
         window.onload = focusInput;
         document.addEventListener('click', focusInput);
+        displayArea.addEventListener('click', focusInput);
 
         hiddenInput.addEventListener('input', () => {
             displayedText.textContent = hiddenInput.value;
         });
 
         hiddenInput.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter' && hiddenInput.value.trim()) {
+            if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
                 e.preventDefault();
+
                 const userText = hiddenInput.value.trim();
 
-                const userDiv = document.createElement('div');
-                userDiv.classList.add('conversation-item', 'user-text');
-                userDiv.textContent = userText;
-                conversation.prepend(userDiv);
+                const userItem = document.createElement('div');
+                userItem.classList.add('conversation-item', 'user-text');
+                userItem.textContent = userText;
+                conversation.appendChild(userItem);
 
-                displayedText.textContent = '';
                 hiddenInput.value = '';
+                displayedText.textContent = '';
 
-                const delay = Math.random() * 4000 + 1000;
-                await new Promise(r => setTimeout(r, delay));
+                const randomDelay = Math.floor(Math.random() * 4000) + 1000;
+                await new Promise(resolve => setTimeout(resolve, randomDelay));
 
                 try {
-                    const res = await fetch('/api/mirror', {
+                    const response = await fetch('/api/mirror', {
                         method: 'POST',
-                        headers: {'Content-Type':'application/json'},
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ message: userText })
                     });
 
-                    const { reply } = await res.json();
+                    const data = await response.json();
 
-                    const replyDiv = document.createElement('div');
-                    replyDiv.classList.add('conversation-item', 'response-text');
-                    replyDiv.textContent = reply;
-                    conversation.prepend(replyDiv);
+                    const responseItem = document.createElement('div');
+                    responseItem.classList.add('conversation-item', 'response-text');
+                    responseItem.textContent = data.reply;
+                    conversation.appendChild(responseItem);
+
+                    conversation.scrollTop = conversation.scrollHeight;
 
                 } catch (error) {
                     console.error('Error:', error);
