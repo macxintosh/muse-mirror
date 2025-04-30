@@ -18,40 +18,30 @@
             background-color: white;
             height: 100vh;
             width: 100vw;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             overflow: hidden;
+            position: relative;
         }
 
-        #container {
+        #fixed-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
             width: 90%;
             max-width: 800px;
-            height: 100vh;
+        }
+
+        #input-line {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            position: relative;
+            align-items: center;
+            height: 30px;
         }
 
-        #input-container {
-            position: relative;
-            margin-top: 40px;
-        }
-
-        #display-area {
+        #displayed-text {
             font-weight: 300;
             font-size: 20px;
             letter-spacing: -0.01em;
             color: #333;
-            min-height: 30px;
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        #displayed-text {
             white-space: pre;
         }
 
@@ -71,16 +61,24 @@
 
         #hidden-input {
             position: absolute;
-            top: 0;
-            left: 0;
             opacity: 0;
             height: 0;
             width: 0;
-            z-index: -1;
+        }
+
+        #conversation {
+            position: absolute;
+            width: 100%;
+            max-height: 45vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse;
+            bottom: 100%;
+            margin-bottom: 10px;
         }
 
         .conversation-item {
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-size: 20px;
             letter-spacing: -0.01em;
             font-weight: 300;
@@ -98,26 +96,17 @@
             animation: fadeIn 2s forwards;
         }
 
-        #conversation {
-            display: flex;
-            flex-direction: column-reverse;
-            overflow-y: auto;
-            max-height: 60vh;
-        }
-
         @keyframes fadeIn {
             to { opacity: 1; }
         }
     </style>
 </head>
 <body>
-    <div id="container">
+    <div id="fixed-center">
         <div id="conversation"></div>
-        <div id="input-container">
-            <div id="display-area">
-                <span id="displayed-text"></span>
-                <span id="cursor"></span>
-            </div>
+        <div id="input-line">
+            <span id="displayed-text"></span>
+            <span id="cursor"></span>
             <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
         </div>
     </div>
@@ -126,7 +115,7 @@
         const hiddenInput = document.getElementById('hidden-input');
         const displayedText = document.getElementById('displayed-text');
         const conversation = document.getElementById('conversation');
-        const displayArea = document.getElementById('display-area');
+        const inputLine = document.getElementById('input-line');
 
         function focusInput() {
             hiddenInput.focus();
@@ -134,7 +123,7 @@
 
         window.onload = focusInput;
         document.addEventListener('click', focusInput);
-        displayArea.addEventListener('click', focusInput);
+        inputLine.addEventListener('click', focusInput);
 
         hiddenInput.addEventListener('input', () => {
             displayedText.textContent = hiddenInput.value;
@@ -145,16 +134,20 @@
                 e.preventDefault();
 
                 const userText = hiddenInput.value.trim();
-
+                
+                // Create user message element
                 const userItem = document.createElement('div');
                 userItem.classList.add('conversation-item', 'user-text');
                 userItem.textContent = userText;
-                conversation.prepend(userItem);
-
+                
+                // Clear input
                 hiddenInput.value = '';
                 displayedText.textContent = '';
+                
+                // Add the message to conversation
+                conversation.prepend(userItem);
 
-                const randomDelay = Math.floor(Math.random() * 4000) + 1000;
+                const randomDelay = Math.floor(Math.random() * 3000) + 1000;
                 await new Promise(resolve => setTimeout(resolve, randomDelay));
 
                 try {
@@ -173,6 +166,25 @@
 
                 } catch (error) {
                     console.error('Error:', error);
+                    
+                    // Fallback in case API fails
+                    const fallbackResponses = [
+                        "The quietest answer is often the most profound.",
+                        "Your words create the space between thoughts.",
+                        "Reflections aren't answers—they're continuations of questions.",
+                        "What if the question itself is the journey?",
+                        "Sometimes clarity comes from simply hearing yourself think.",
+                        "In stillness, even incomplete thoughts find their meaning.",
+                        "The mirror doesn't judge what it reflects.",
+                        "Your voice carries more wisdom than you realize.",
+                        "Between intention and expression lies a universe of meaning.",
+                        "The pause after a thought is where understanding begins."
+                    ];
+                    
+                    const responseItem = document.createElement('div');
+                    responseItem.classList.add('conversation-item', 'response-text');
+                    responseItem.textContent = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+                    conversation.prepend(responseItem);
                 }
             }
         });
