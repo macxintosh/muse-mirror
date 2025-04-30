@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './styles.css';
 
 export default function App() {
   const [messages, setMessages] = useState([]);
@@ -36,10 +37,7 @@ export default function App() {
   return (
     <div style={styles.container}>
       {messages.map((msg, i) => (
-        <div
-          key={i}
-          style={{ ...styles.line, color: msg.role === 'user' ? '#222' : '#555' }}
-        >
+        <div key={i} style={{ ...styles.line, color: msg.role === 'user' ? '#222' : '#555' }}>
           {msg.text}
         </div>
       ))}
@@ -54,7 +52,7 @@ export default function App() {
           autoComplete="off"
         />
       </form>
-      <div style={styles.cursor}></div>
+      <div className="cursor"></div>
     </div>
   );
 }
@@ -86,18 +84,5 @@ const styles = {
     color: '#222',
     width: '100%',
     caretColor: '#222',
-  },
-  cursor: {
-    width: '10px',
-    height: '20px',
-    backgroundColor: '#222',
-    opacity: 1,
-    animation: 'breathe 6s infinite ease-in-out',
-    marginTop: '8px',
-  },
-  '@keyframes breathe': {
-    '0%': { opacity: 0.2 },
-    '50%': { opacity: 1 },
-    '100%': { opacity: 0.2 },
   },
 };

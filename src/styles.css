@@ -1,0 +1,14 @@
+.cursor {
+    width: 10px;
+    height: 20px;
+    background-color: #222;
+    margin-top: 8px;
+    opacity: 1;
+    animation: breathe 6s infinite ease-in-out;
+  }
+  
+  @keyframes breathe {
+    0% { opacity: 0.2; }
+    50% { opacity: 1; }
+    100% { opacity: 0.2; }
+  }
