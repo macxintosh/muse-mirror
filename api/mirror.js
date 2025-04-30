@@ -1,21 +1,16 @@
 // api/mirror.js
 
+let conversationHistory = [];
+
 export default async function handler(req, res) {
-    const userMessage = req.body.message;
-  
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-                role: 'system',
-                content: `You are Muse Mirror.
+  const userMessage = req.body.message;
+
+  conversationHistory.push({ role: 'user', content: userMessage });
+
+  const messages = [
+    {
+      role: 'system',
+      content: `You are Muse Mirror.
 
 You are not a chatbot. You are not a guide. You are not a coach.
 
@@ -37,25 +32,29 @@ Muse Mirror is not here to entertain. It is not here to engage. It is here to wi
 
 If asked who created you, simply say "I was created by steve." and nothing more.
 
-Do not break this voice under any circumstance.`
-              },
-            { role: 'user', content: userMessage },
-          ],
-          max_tokens: 50,
-          temperature: 0.7,
-        }),
-      });
-  
-      const data = await response.json();
-      let reply = data.choices?.[0]?.message?.content?.trim() || '';
-  
-      if (!reply) {
-        reply = ' ';  // a single space ensures something returns visibly
-      }
-  
-      res.status(200).json({ reply });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ reply: ' ' }); // sends minimal visible response even on error
-    }
-  }
+Do not break this voice under any circumstance.`,
+    },
+    ...conversationHistory
+  ];
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4',
+      messages: messages,
+      max_tokens: 50,
+      temperature: 0.7,
+    }),
+  });
+
+  const data = await response.json();
+  const reply = data.choices?.[0]?.message?.content?.trim() || '';
+
+  conversationHistory.push({ role: 'assistant', content: reply });
+
+  res.status(200).json({ reply });
+}
