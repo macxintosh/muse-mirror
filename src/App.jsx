@@ -91,11 +91,13 @@ const styles = {
     width: '10px',
     height: '20px',
     backgroundColor: '#222',
-    animation: 'breathe 5s infinite ease-in-out',
+    opacity: 1,
+    animation: 'breathe 6s infinite ease-in-out',
     marginTop: '8px',
   },
   '@keyframes breathe': {
-    '0%, 100%': { opacity: 1 },
-    '50%': { opacity: 0 },
+    '0%': { opacity: 0.2 },
+    '50%': { opacity: 1 },
+    '100%': { opacity: 0.2 },
   },
 };
