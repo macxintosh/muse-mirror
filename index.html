@@ -98,7 +98,7 @@
         }
         
         .smooth-transition {
-            transition: all 0.3s ease-out;
+            transition: opacity 0.5s ease-out;
         }
 
         @keyframes fadeIn {
@@ -140,7 +140,7 @@
 
                 const userText = hiddenInput.value.trim();
                 
-                // Add transition class to make text clearing smooth
+                // Add transition class with faster fade-out (0.5s)
                 displayedText.classList.add('smooth-transition');
                 
                 // Create user message element
@@ -151,7 +151,7 @@
                 // Smoothly transition the input text out
                 displayedText.style.opacity = '0';
                 
-                // Wait for transition to complete before clearing
+                // Wait for shorter fade-out transition to complete
                 setTimeout(() => {
                     // Clear input
                     hiddenInput.value = '';
@@ -162,47 +162,47 @@
                     
                     // Add the message to conversation
                     conversation.prepend(userItem);
-                }, 300);
-
-                const randomDelay = Math.floor(Math.random() * 2000) + 1000;
-                await new Promise(resolve => setTimeout(resolve, randomDelay + 300));
-
-                try {
-                    const response = await fetch('/api/mirror', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: userText })
-                    });
-
-                    const data = await response.json();
-
-                    const responseItem = document.createElement('div');
-                    responseItem.classList.add('conversation-item', 'response-text');
-                    responseItem.textContent = data.reply;
-                    conversation.prepend(responseItem);
-
-                } catch (error) {
-                    console.error('Error:', error);
                     
-                    // Fallback in case API fails
-                    const fallbackResponses = [
-                        "The quietest answer is often the most profound.",
-                        "Your words create the space between thoughts.",
-                        "Reflections aren't answers—they're continuations of questions.",
-                        "What if the question itself is the journey?",
-                        "Sometimes clarity comes from simply hearing yourself think.",
-                        "In stillness, even incomplete thoughts find their meaning.",
-                        "The mirror doesn't judge what it reflects.",
-                        "Your voice carries more wisdom than you realize.",
-                        "Between intention and expression lies a universe of meaning.",
-                        "The pause after a thought is where understanding begins."
-                    ];
-                    
-                    const responseItem = document.createElement('div');
-                    responseItem.classList.add('conversation-item', 'response-text');
-                    responseItem.textContent = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-                    conversation.prepend(responseItem);
-                }
+                    // Now wait before showing response (after input transition is complete)
+                    setTimeout(async () => {
+                        try {
+                            const response = await fetch('/api/mirror', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ message: userText })
+                            });
+
+                            const data = await response.json();
+
+                            const responseItem = document.createElement('div');
+                            responseItem.classList.add('conversation-item', 'response-text');
+                            responseItem.textContent = data.reply;
+                            conversation.prepend(responseItem);
+
+                        } catch (error) {
+                            console.error('Error:', error);
+                            
+                            // Fallback in case API fails
+                            const fallbackResponses = [
+                                "The quietest answer is often the most profound.",
+                                "Your words create the space between thoughts.",
+                                "Reflections aren't answers—they're continuations of questions.",
+                                "What if the question itself is the journey?",
+                                "Sometimes clarity comes from simply hearing yourself think.",
+                                "In stillness, even incomplete thoughts find their meaning.",
+                                "The mirror doesn't judge what it reflects.",
+                                "Your voice carries more wisdom than you realize.",
+                                "Between intention and expression lies a universe of meaning.",
+                                "The pause after a thought is where understanding begins."
+                            ];
+                            
+                            const responseItem = document.createElement('div');
+                            responseItem.classList.add('conversation-item', 'response-text');
+                            responseItem.textContent = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+                            conversation.prepend(responseItem);
+                        }
+                    }, 500); // Short delay after input appears before showing response
+                }, 500); // Wait for 0.5s fade-out to complete (was 2000ms)
             }
         });
     </script>
