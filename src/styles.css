@@ -1,8 +1,13 @@
-.cursor {
+body, html {
+    margin: 0;
+    padding: 0;
+  }
+  
+  .cursor {
     width: 10px;
-    height: 20px;
+    height: 24px;
     background-color: #222;
-    margin-top: 8px;
+    margin-top: 16px;
     opacity: 1;
     animation: breathe 6s infinite ease-in-out;
   }

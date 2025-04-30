@@ -36,23 +36,25 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      {messages.map((msg, i) => (
-        <div key={i} style={{ ...styles.line, color: msg.role === 'user' ? '#222' : '#555' }}>
-          {msg.text}
-        </div>
-      ))}
-      {showBegin && <div style={styles.begin}>begin.</div>}
-      <form onSubmit={handleSubmit}>
-        <input
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          style={styles.input}
-          autoComplete="off"
-        />
-      </form>
-      <div className="cursor"></div>
+      <div style={styles.inputWrapper}>
+        {messages.map((msg, i) => (
+          <div key={i} style={{ ...styles.line, color: msg.role === 'user' ? '#222' : '#555' }}>
+            {msg.text}
+          </div>
+        ))}
+        {showBegin && <div style={styles.begin}>begin.</div>}
+        <form onSubmit={handleSubmit}>
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            style={styles.input}
+            autoComplete="off"
+          />
+        </form>
+        <div className="cursor"></div>
+      </div>
     </div>
   );
 }
@@ -60,29 +62,38 @@ export default function App() {
 const styles = {
   container: {
     backgroundColor: '#f8f6f2',
-    fontFamily: 'IBM Plex Mono, monospace',
-    fontSize: '20px',
+    fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
+    fontSize: '24px',
     minHeight: '100vh',
-    padding: '40px',
+    padding: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inputWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    position: 'relative',
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: '600px',
   },
   begin: {
     color: '#999',
-    fontSize: '16px',
+    fontSize: '18px',
     marginBottom: '10px',
   },
   line: {
-    marginBottom: '8px',
+    marginBottom: '10px',
+    textAlign: 'center',
   },
   input: {
-    backgroundColor: '#f8f6f2',
+    backgroundColor: 'transparent',
     border: 'none',
     outline: 'none',
     font: 'inherit',
     color: '#222',
     width: '100%',
     caretColor: '#222',
+    textAlign: 'center',
   },
 };
