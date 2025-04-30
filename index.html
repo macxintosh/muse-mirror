@@ -107,14 +107,14 @@
         
         /* Canvas drawing area */
         #canvas-container {
-            position: fixed; /* Changed from absolute to fixed */
-            width: 100vw; /* Full viewport width */
-            height: 45vh; /* Fill lower portion of screen */
-            top: 50%; /* Align with vertical center */
+            position: fixed;
+            width: 100vw;
+            height: 45vh;
             left: 0;
-            margin-top: 25px; /* Just enough space for the cursor */
+            right: 0;
             opacity: 0;
             transition: opacity 0.3s ease;
+            /* Position will be set dynamically in JavaScript */
         }
         
         #drawing-canvas {
@@ -158,8 +158,20 @@
             hiddenInput.focus();
         }
 
+        // Set canvas position dynamically based on cursor position
+        function positionCanvas() {
+            const cursorElement = document.getElementById('cursor');
+            const cursorRect = cursorElement.getBoundingClientRect();
+            
+            // Position canvas right at the bottom of the cursor
+            canvasContainer.style.top = (cursorRect.bottom) + 'px';
+        }
+        
         // Set up canvas with high resolution
         function setupCanvas() {
+            // Position the canvas based on cursor position
+            positionCanvas();
+            
             // Get the display pixel ratio for high-resolution displays
             const dpr = window.devicePixelRatio || 1;
             
@@ -217,7 +229,10 @@
             setupCanvas();
             
             // Handle resize
-            window.addEventListener('resize', setupCanvas);
+            window.addEventListener('resize', function() {
+                setupCanvas();
+                positionCanvas();
+            });
             
             // Drawing event listeners
             canvas.addEventListener('mousedown', startDrawing);
