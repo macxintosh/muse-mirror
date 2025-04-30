@@ -4,7 +4,6 @@ import './styles.css';
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [showBegin, setShowBegin] = useState(true);
   const inputRef = useRef(null);
 
   const askGPT = async (userInput) => {
@@ -27,80 +26,29 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (input.length > 0) setShowBegin(false);
-  }, [input]);
-
-  useEffect(() => {
     inputRef.current?.focus();
   }, [messages]);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.contentWrapper}>
+    <div className="container">
+      <div className="messages">
         {messages.map((msg, i) => (
-          <div key={i} style={{...styles.line, color: msg.role === 'user' ? '#000' : '#777'}}>
+          <div key={i} className={msg.role}>
             {msg.text}
           </div>
         ))}
-        {showBegin && <div style={styles.begin}>begin.</div>}
-        <form onSubmit={handleSubmit} style={styles.inputForm}>
-          <div style={styles.inputCursorWrapper}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              style={styles.input}
-              autoComplete="off"
-            />
-            <span className="cursor"></span>
-          </div>
-        </form>
       </div>
+      <form onSubmit={handleSubmit} className="input-wrapper">
+        <input
+          ref={inputRef}
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          className="input"
+          autoComplete="off"
+        />
+        <span className="cursor"></span>
+      </form>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    backgroundColor: '#fff',
-    fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  contentWrapper: {
-    maxWidth: '600px',
-    width: '100%',
-    textAlign: 'center',
-  },
-  begin: {
-    color: '#999',
-    fontSize: '16px',
-    marginBottom: '20px',
-  },
-  line: {
-    marginBottom: '12px',
-    fontSize: '18px',
-  },
-  inputForm: {
-    display: 'flex',
-    justifyContent: 'center',
-    marginTop: '16px',
-  },
-  inputCursorWrapper: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  input: {
-    backgroundColor: 'transparent',
-    border: 'none',
-    outline: 'none',
-    fontSize: '18px',
-    color: '#000',
-    caretColor: 'transparent',
-    textAlign: 'center',
-  },
-};
