@@ -1,60 +1,16 @@
 body, html {
-    height: 100vh;
     margin: 0;
     padding: 0;
-    background-color: white;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    color: black;
-  }
-  
-  .container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .messages {
-    text-align: center;
-    max-width: 500px;
-    margin-bottom: 20px;
-    font-size: 16px;
-    color: #666;
-  }
-  
-  .user {
-    color: black;
-  }
-  
-  .assistant {
-    color: #888;
-    font-size: 15px;
-    margin-top: 10px;
-  }
-  
-  .input-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .input {
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 18px;
-    color: black;
-    text-align: center;
-    caret-color: transparent;
+    background-color: #fff;
   }
   
   .cursor {
+    display: inline-block;
     width: 1px;
-    height: 20px;
-    background-color: black;
+    height: 22px;
+    background-color: #000;
     animation: breathe 5s infinite ease-in-out;
-    margin-left: 3px;
+    margin-left: 2px;
   }
   
   @keyframes breathe {
