@@ -1,13 +1,193 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muse Mirror</title>
+    <style>
+        @import url('https://fonts.cdnjs.com/css2?family=Inter:wght@300;400&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: white;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #container {
+            width: 90%;
+            max-width: 800px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #input-container {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        #display-area {
+            font-weight: 300;
+            font-size: 20px;
+            letter-spacing: -0.01em;
+            color: #333;
+            min-height: 30px;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        #displayed-text {
+            white-space: pre;
+        }
+
+        #cursor {
+            display: inline-block;
+            width: 2px;
+            height: 24px;
+            background-color: #333;
+            animation: breathe 4.5s infinite ease-in-out;
+            margin-left: 1px;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        #hidden-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            height: 0;
+            width: 0;
+            z-index: -1;
+        }
+
+        #hint {
+            position: absolute;
+            left: 0;
+            top: 35px;
+            font-size: 13px;
+            color: #999;
+            letter-spacing: 0;
+            opacity: 1;
+            transition: opacity 2s ease;
+            font-weight: 300;
+        }
+
+        .conversation-item {
+            margin-bottom: 20px;
+            font-size: 20px;
+            letter-spacing: -0.01em;
+            font-weight: 300;
+            line-height: 1.5;
+        }
+
+        .user-text {
+            color: #333;
+        }
+
+        .response-text {
+            color: #666;
+        }
+
+        #conversation {
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="conversation"></div>
+        <div id="input-container">
+            <div id="display-area">
+                <span id="displayed-text"></span>
+                <span id="cursor"></span>
+            </div>
+            <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <div id="hint">begin</div>
+        </div>
+    </div>
+
+    <script>
+        const hiddenInput = document.getElementById('hidden-input');
+        const displayedText = document.getElementById('displayed-text');
+        const hint = document.getElementById('hint');
+        const conversation = document.getElementById('conversation');
+        const displayArea = document.getElementById('display-area');
+        let firstInteractionDone = false;
+
+        function focusInput() {
+            hiddenInput.focus();
+        }
+
+        window.onload = focusInput;
+        document.addEventListener('click', focusInput);
+        displayArea.addEventListener('click', focusInput);
+
+        hiddenInput.addEventListener('input', function() {
+            displayedText.textContent = hiddenInput.value;
+
+            if (!firstInteractionDone && hiddenInput.value.length > 0) {
+                hint.style.opacity = '0';
+                firstInteractionDone = true;
+            }
+        });
+
+        hiddenInput.addEventListener('keydown', async function(e) {
+            if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
+                e.preventDefault();
+
+                const userText = hiddenInput.value.trim();
+
+                const userItem = document.createElement('div');
+                userItem.classList.add('conversation-item', 'user-text');
+                userItem.textContent = userText;
+                conversation.appendChild(userItem);
+
+                hiddenInput.value = '';
+                displayedText.textContent = '';
+
+                try {
+                    const response = await fetch('/api/mirror', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: userText })
+                    });
+
+                    const data = await response.json();
+
+                    const responseItem = document.createElement('div');
+                    responseItem.classList.add('conversation-item', 'response-text');
+                    responseItem.textContent = data.reply;
+                    conversation.appendChild(responseItem);
+
+                    conversation.scrollTop = conversation.scrollHeight;
+
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        });
+    </script>
+</body>
 </html>
