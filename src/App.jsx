@@ -36,7 +36,10 @@ export default function App() {
   return (
     <div style={styles.container}>
       {messages.map((msg, i) => (
-        <div key={i} style={{ ...styles.line, color: msg.role === 'user' ? '#222' : '#555' }}>
+        <div
+          key={i}
+          style={{ ...styles.line, color: msg.role === 'user' ? '#222' : '#555' }}
+        >
           {msg.text}
         </div>
       ))}
@@ -51,6 +54,7 @@ export default function App() {
           autoComplete="off"
         />
       </form>
+      <div style={styles.cursor}></div>
     </div>
   );
 }
@@ -64,6 +68,7 @@ const styles = {
     padding: '40px',
     display: 'flex',
     flexDirection: 'column',
+    position: 'relative',
   },
   begin: {
     color: '#999',
@@ -81,5 +86,16 @@ const styles = {
     color: '#222',
     width: '100%',
     caretColor: '#222',
+  },
+  cursor: {
+    width: '10px',
+    height: '20px',
+    backgroundColor: '#222',
+    animation: 'breathe 5s infinite ease-in-out',
+    marginTop: '8px',
+  },
+  '@keyframes breathe': {
+    '0%, 100%': { opacity: 1 },
+    '50%': { opacity: 0 },
   },
 };
