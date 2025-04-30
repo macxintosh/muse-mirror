@@ -10,7 +10,7 @@ body, html {
     height: 22px;
     background-color: #000;
     animation: breathe 5s infinite ease-in-out;
-    margin-left: 4px;
+    margin-left: 2px;
   }
   
   @keyframes breathe {

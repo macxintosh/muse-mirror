@@ -44,15 +44,17 @@ export default function App() {
         ))}
         {showBegin && <div style={styles.begin}>begin.</div>}
         <form onSubmit={handleSubmit} style={styles.inputForm}>
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            style={styles.input}
-            autoComplete="off"
-          />
-          <span className="cursor"></span>
+          <div style={styles.inputCursorWrapper}>
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              style={styles.input}
+              autoComplete="off"
+            />
+            <span className="cursor"></span>
+          </div>
         </form>
       </div>
     </div>
@@ -85,8 +87,12 @@ const styles = {
   inputForm: {
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'center',
     marginTop: '16px',
+  },
+  inputCursorWrapper: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     backgroundColor: 'transparent',
@@ -96,6 +102,5 @@ const styles = {
     color: '#000',
     caretColor: 'transparent',
     textAlign: 'center',
-    width: '100%',
   },
 };
