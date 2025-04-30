@@ -36,14 +36,14 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.inputWrapper}>
+      <div style={styles.contentWrapper}>
         {messages.map((msg, i) => (
-          <div key={i} style={{ ...styles.line, color: msg.role === 'user' ? '#222' : '#555' }}>
+          <div key={i} style={{...styles.line, color: msg.role === 'user' ? '#000' : '#777'}}>
             {msg.text}
           </div>
         ))}
         {showBegin && <div style={styles.begin}>begin.</div>}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={styles.inputForm}>
           <input
             ref={inputRef}
             type="text"
@@ -52,8 +52,8 @@ export default function App() {
             style={styles.input}
             autoComplete="off"
           />
+          <span className="cursor"></span>
         </form>
-        <div className="cursor"></div>
       </div>
     </div>
   );
@@ -61,39 +61,41 @@ export default function App() {
 
 const styles = {
   container: {
-    backgroundColor: '#f8f6f2',
+    backgroundColor: '#fff',
     fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
-    fontSize: '24px',
     minHeight: '100vh',
-    padding: '20px',
     display: 'flex',
-    alignItems: 'center',
     justifyContent: 'center',
-  },
-  inputWrapper: {
-    display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
-    width: '100%',
+  },
+  contentWrapper: {
     maxWidth: '600px',
+    width: '100%',
+    textAlign: 'center',
   },
   begin: {
     color: '#999',
-    fontSize: '18px',
-    marginBottom: '10px',
+    fontSize: '16px',
+    marginBottom: '20px',
   },
   line: {
-    marginBottom: '10px',
-    textAlign: 'center',
+    marginBottom: '12px',
+    fontSize: '18px',
+  },
+  inputForm: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: '16px',
   },
   input: {
     backgroundColor: 'transparent',
     border: 'none',
     outline: 'none',
-    font: 'inherit',
-    color: '#222',
-    width: '100%',
-    caretColor: '#222',
+    fontSize: '18px',
+    color: '#000',
+    caretColor: 'transparent',
     textAlign: 'center',
+    width: '100%',
   },
 };
