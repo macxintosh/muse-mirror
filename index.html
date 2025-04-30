@@ -107,12 +107,12 @@
         
         /* Canvas drawing area */
         #canvas-container {
-            position: absolute;
-            width: 100%;
-            height: 40vh; /* Fill a significant portion of the available space */
-            top: 100%;
+            position: fixed; /* Changed from absolute to fixed */
+            width: 100vw; /* Full viewport width */
+            height: 45vh; /* Fill lower portion of screen */
+            top: 50%; /* Align with vertical center */
             left: 0;
-            margin-top: 10px;
+            margin-top: 25px; /* Just enough space for the cursor */
             opacity: 0;
             transition: opacity 0.3s ease;
         }
@@ -136,9 +136,9 @@
             <span id="cursor"></span>
             <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
         </div>
-        <div id="canvas-container">
-            <canvas id="drawing-canvas"></canvas>
-        </div>
+    </div>
+    <div id="canvas-container">
+        <canvas id="drawing-canvas"></canvas>
     </div>
 
     <script>
