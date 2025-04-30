@@ -153,6 +153,7 @@
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
+        let canvasActivated = false; // Flag to track if canvas has been activated
 
         function focusInput() {
             hiddenInput.focus();
@@ -226,43 +227,17 @@
         // Initialize
         window.onload = function() {
             focusInput();
-            setupCanvas();
+            
+            // Don't initialize canvas yet, wait for first input
+            // We'll set it up after the first input is processed
             
             // Handle resize
             window.addEventListener('resize', function() {
-                setupCanvas();
-                positionCanvas();
+                if (canvasActivated) {
+                    setupCanvas();
+                    positionCanvas();
+                }
             });
-            
-            // Drawing event listeners
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent('mousedown', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                });
-                canvas.dispatchEvent(mouseEvent);
-            });
-            
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('touchmove', function(e) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent('mousemove', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                });
-                canvas.dispatchEvent(mouseEvent);
-            });
-            
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('touchend', function() {
-                canvas.dispatchEvent(new MouseEvent('mouseup'));
-            });
-            
-            canvas.addEventListener('mouseout', stopDrawing);
         };
         
         document.addEventListener('click', function(e) {
@@ -308,10 +283,45 @@
                     conversation.prepend(userItem);
                     
                     // After first input, make canvas available
-                    if (canvasContainer.style.display === 'none' || !canvasContainer.style.display) {
+                    if (!canvasActivated) {
                         canvasContainer.style.display = 'block';
                         // Position the canvas properly
                         positionCanvas();
+                        // Update the flag
+                        canvasActivated = true;
+                        
+                        // Re-initialize canvas now that it's visible
+                        setupCanvas();
+                        
+                        // Re-attach event listeners to ensure they work
+                        canvas.addEventListener('mousedown', startDrawing);
+                        canvas.addEventListener('touchstart', function(e) {
+                            e.preventDefault();
+                            const touch = e.touches[0];
+                            const mouseEvent = new MouseEvent('mousedown', {
+                                clientX: touch.clientX,
+                                clientY: touch.clientY
+                            });
+                            canvas.dispatchEvent(mouseEvent);
+                        });
+                        
+                        canvas.addEventListener('mousemove', draw);
+                        canvas.addEventListener('touchmove', function(e) {
+                            e.preventDefault();
+                            const touch = e.touches[0];
+                            const mouseEvent = new MouseEvent('mousemove', {
+                                clientX: touch.clientX,
+                                clientY: touch.clientY
+                            });
+                            canvas.dispatchEvent(mouseEvent);
+                        });
+                        
+                        canvas.addEventListener('mouseup', stopDrawing);
+                        canvas.addEventListener('touchend', function() {
+                            canvas.dispatchEvent(new MouseEvent('mouseup'));
+                        });
+                        
+                        canvas.addEventListener('mouseout', stopDrawing);
                     }
                     
                     // Now wait before showing response (after input transition is complete)
