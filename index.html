@@ -98,7 +98,6 @@
         #hidden-input {
             position: absolute;
             opacity: 0;
-            pointer-events: none;
         }
     </style>
 </head>
@@ -120,8 +119,10 @@
         const displayedText = document.getElementById('displayed-text');
         const conversation = document.getElementById('conversation');
 
-        window.onclick = () => hiddenInput.focus();
-        hiddenInput.focus();
+        const focusInput = () => hiddenInput.focus();
+
+        window.onload = focusInput;
+        document.addEventListener('click', focusInput);
 
         hiddenInput.addEventListener('input', () => {
             displayedText.textContent = hiddenInput.value;
