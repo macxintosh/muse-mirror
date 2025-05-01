@@ -58,6 +58,19 @@
             0%, 100% { opacity: 0.2; }
             50% { opacity: 1; }
         }
+        
+        /* Special class that modifies the breathing animation to slowly fade out */
+        .fading-cursor {
+            animation: fadeBreath 9s forwards ease-in-out !important;
+        }
+        
+        @keyframes fadeBreath {
+            0% { opacity: 0.2; } 
+            25% { opacity: 1; }    /* Initial breathing cycle */
+            50% { opacity: 0.1; }  /* Second breath getting weaker */
+            75% { opacity: 0.4; }  /* Last partial breath */
+            100% { opacity: 0; }   /* Finally fading away */
+        }
 
         #hidden-input {
             position: absolute;
@@ -105,7 +118,7 @@
             to { opacity: 1; }
         }
         
-        /* Canvas drawing area */
+        /* Heat map canvas container */
         #canvas-container {
             position: fixed;
             width: 100vw;
@@ -115,17 +128,22 @@
             opacity: 0;
             transition: opacity 0.3s ease;
             display: none; /* Initially hidden completely */
+            border-radius: 8px;
+            overflow: hidden;
         }
         
-        #drawing-canvas {
+        #heatmap-canvas {
             width: 100%;
             height: 100%;
-            cursor: crosshair;
+            background-color: white;
+            cursor: circle;
         }
         
         .canvas-visible {
             opacity: 1 !important;
         }
+
+        /* No controls or info text for pure simplicity */
     </style>
 </head>
 <body>
@@ -138,8 +156,9 @@
         </div>
     </div>
     <div id="canvas-container">
-        <canvas id="drawing-canvas"></canvas>
+        <canvas id="heatmap-canvas"></canvas>
     </div>
+    <!-- Removed controls and info text for pure simplicity -->
 
     <script>
         const hiddenInput = document.getElementById('hidden-input');
@@ -147,13 +166,24 @@
         const conversation = document.getElementById('conversation');
         const inputLine = document.getElementById('input-line');
         const canvasContainer = document.getElementById('canvas-container');
-        const canvas = document.getElementById('drawing-canvas');
+        const canvas = document.getElementById('heatmap-canvas');
         const ctx = canvas.getContext('2d');
         
-        let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
-        let canvasActivated = false; // Flag to track if canvas has been activated
+        // Track message count for the 8-message limit
+        let messageCount = 0;
+        const MESSAGE_LIMIT = 8;
+        
+        // Heat map variables
+        let isMouseDown = false;
+        let mouseStartTime = 0;
+        let canvasActivated = false;
+        const touches = {};
+        const heatData = {};
+        let animationId = null;
+        const fadeSpeed = 0.99;
+        const maxIntensity = 255;
+        const touchRadius = 20;
+        const heatIncrement = 12;
 
         function focusInput() {
             hiddenInput.focus();
@@ -168,7 +198,7 @@
             canvasContainer.style.top = (cursorRect.bottom) + 'px';
         }
         
-        // Set up canvas with high resolution
+        // Set up heatmap canvas
         function setupCanvas() {
             // Position the canvas based on cursor position
             positionCanvas();
@@ -187,49 +217,195 @@
             canvas.style.width = canvasContainer.offsetWidth + 'px';
             canvas.style.height = canvasContainer.offsetHeight + 'px';
             
-            // Set drawing parameters
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = '#000';
+            // Clear the canvas with white background
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
         
-        // Drawing functions
-        function startDrawing(e) {
-            isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            lastX = e.clientX - rect.left;
-            lastY = e.clientY - rect.top;
-            // Make canvas visible when drawing starts
-            canvasContainer.classList.add('canvas-visible');
+        // Update heat map
+        function updateHeatMap() {
+            // Create image data
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // Apply heat values and fade
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const key = `${x},${y}`;
+                    
+                    if (heatData[key]) {
+                        // Fade the heat value
+                        heatData[key] *= fadeSpeed;
+                        
+                        // If heat is too low, delete the point
+                        if (heatData[key] < 0.1) {
+                            delete heatData[key];
+                            continue;
+                        }
+                        
+                        // Calculate the pixel index
+                        const index = (y * canvas.width + x) * 4;
+                        
+                        // Set RGB values based on heat (grayscale from white to black)
+                        const intensity = 255 - Math.min(255, Math.floor(heatData[key]));
+                        data[index] = intensity;     // R
+                        data[index + 1] = intensity; // G
+                        data[index + 2] = intensity; // B
+                        data[index + 3] = 255;       // A (always full opacity)
+                    }
+                }
+            }
+            
+            // Put the image data back
+            ctx.putImageData(imageData, 0, 0);
         }
         
-        function draw(e) {
-            if (!isDrawing) return;
+        // Animation loop
+        function animate() {
+            updateHeatMap();
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        // Add heat to points
+        function addHeat(x, y, intensity) {
+            // Calculate grid position
+            const gridX = Math.floor(x);
+            const gridY = Math.floor(y);
+            
+            // Add heat to points in a radius around the touch
+            for (let offsetY = -touchRadius; offsetY <= touchRadius; offsetY++) {
+                for (let offsetX = -touchRadius; offsetX <= touchRadius; offsetX++) {
+                    const currentX = gridX + offsetX;
+                    const currentY = gridY + offsetY;
+                    
+                    // Skip if outside canvas
+                    if (currentX < 0 || currentX >= canvas.width || currentY < 0 || currentY >= canvas.height) {
+                        continue;
+                    }
+                    
+                    // Calculate distance from center of touch
+                    const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+                    
+                    // Skip if outside radius
+                    if (distance > touchRadius) {
+                        continue;
+                    }
+                    
+                    // Calculate falloff based on distance (closer = more heat)
+                    const falloff = 1 - (distance / touchRadius);
+                    
+                    // Add heat to this point
+                    const key = `${currentX},${currentY}`;
+                    heatData[key] = (heatData[key] || 0) + intensity * falloff;
+                    
+                    // Cap heat at maximum
+                    if (heatData[key] > maxIntensity) {
+                        heatData[key] = maxIntensity;
+                    }
+                }
+            }
+        }
+        
+        // Handle touch events for heatmap
+        function handleStart(e) {
+            e.preventDefault();
+            
+            // Add new touches
+            const newTouches = e.changedTouches;
+            for (let i = 0; i < newTouches.length; i++) {
+                const touch = newTouches[i];
+                const rect = canvas.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                
+                // Store touch data
+                touches[touch.identifier] = {
+                    x: x,
+                    y: y,
+                    startTime: Date.now()
+                };
+                
+                // Add initial heat
+                addHeat(x, y, heatIncrement);
+            }
+        }
+        
+        function handleMove(e) {
+            e.preventDefault();
+            
+            // Process changed touches
+            const activeTouches = e.changedTouches;
+            for (let i = 0; i < activeTouches.length; i++) {
+                const touch = activeTouches[i];
+                
+                // Get touch data
+                if (touches[touch.identifier]) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+                    
+                    // Calculate time-based intensity (longer touch = more heat)
+                    const touchDuration = Date.now() - touches[touch.identifier].startTime;
+                    const timeMultiplier = Math.min(5, 1 + (touchDuration / 500));
+                    
+                    // Update position
+                    touches[touch.identifier].x = x;
+                    touches[touch.identifier].y = y;
+                    
+                    // Add heat based on time held
+                    addHeat(x, y, heatIncrement * timeMultiplier);
+                }
+            }
+        }
+        
+        function handleEnd(e) {
+            e.preventDefault();
+            
+            // Remove ended touches
+            const endedTouches = e.changedTouches;
+            for (let i = 0; i < endedTouches.length; i++) {
+                const touch = endedTouches[i];
+                delete touches[touch.identifier];
+            }
+        }
+        
+        // Mouse event handlers for heatmap
+        function handleMouseDown(e) {
+            e.preventDefault();
+            isMouseDown = true;
+            mouseStartTime = Date.now();
             
             const rect = canvas.getBoundingClientRect();
-            const currentX = e.clientX - rect.left;
-            const currentY = e.clientY - rect.top;
-            
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(currentX, currentY);
-            ctx.stroke();
-            
-            lastX = currentX;
-            lastY = currentY;
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            addHeat(x, y, heatIncrement);
         }
         
-        function stopDrawing() {
-            isDrawing = false;
+        function handleMouseMove(e) {
+            if (!isMouseDown) return;
+            e.preventDefault();
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Calculate time-based intensity
+            const mouseDuration = Date.now() - mouseStartTime;
+            const timeMultiplier = Math.min(5, 1 + (mouseDuration / 500));
+            
+            addHeat(x, y, heatIncrement * timeMultiplier);
         }
         
+        function handleMouseUp(e) {
+            e.preventDefault();
+            isMouseDown = false;
+        }
+
         // Initialize
         window.onload = function() {
             focusInput();
             
             // Don't initialize canvas yet, wait for first input
-            // We'll set it up after the first input is processed
             
             // Handle resize
             window.addEventListener('resize', function() {
@@ -241,8 +417,8 @@
         };
         
         document.addEventListener('click', function(e) {
-            // Only focus input if not clicking on canvas
-            if (e.target !== canvas) {
+            // Only focus input if not clicking on canvas or buttons
+            if (e.target !== canvas && e.target.tagName !== 'BUTTON') {
                 focusInput();
             }
         });
@@ -259,7 +435,7 @@
 
                 const userText = hiddenInput.value.trim();
                 
-                // Add transition class with faster fade-out (0.5s)
+                // Add transition class with faster fade-out
                 displayedText.classList.add('smooth-transition');
                 
                 // Create user message element
@@ -282,49 +458,57 @@
                     // Add the message to conversation
                     conversation.prepend(userItem);
                     
+                    // Increment message count
+                    messageCount++;
+                    
                     // After first input, make canvas available
                     if (!canvasActivated) {
+                        // Display the canvas
                         canvasContainer.style.display = 'block';
-                        // Position the canvas properly
-                        positionCanvas();
-                        // Update the flag
-                        canvasActivated = true;
                         
-                        // Re-initialize canvas now that it's visible
+                        // Position everything properly
+                        positionCanvas();
+                        
+                        // Initialize canvas
                         setupCanvas();
                         
-                        // Re-attach event listeners to ensure they work
-                        canvas.addEventListener('mousedown', startDrawing);
-                        canvas.addEventListener('touchstart', function(e) {
-                            e.preventDefault();
-                            const touch = e.touches[0];
-                            const mouseEvent = new MouseEvent('mousedown', {
-                                clientX: touch.clientX,
-                                clientY: touch.clientY
-                            });
-                            canvas.dispatchEvent(mouseEvent);
-                        });
+                        // Start the animation loop
+                        animate();
                         
-                        canvas.addEventListener('mousemove', draw);
-                        canvas.addEventListener('touchmove', function(e) {
-                            e.preventDefault();
-                            const touch = e.touches[0];
-                            const mouseEvent = new MouseEvent('mousemove', {
-                                clientX: touch.clientX,
-                                clientY: touch.clientY
-                            });
-                            canvas.dispatchEvent(mouseEvent);
-                        });
+                        // Add event listeners for touch events
+                        canvas.addEventListener('touchstart', handleStart, false);
+                        canvas.addEventListener('touchmove', handleMove, false);
+                        canvas.addEventListener('touchend', handleEnd, false);
+                        canvas.addEventListener('touchcancel', handleEnd, false);
                         
-                        canvas.addEventListener('mouseup', stopDrawing);
-                        canvas.addEventListener('touchend', function() {
-                            canvas.dispatchEvent(new MouseEvent('mouseup'));
-                        });
+                        // Add event listeners for mouse events
+                        canvas.addEventListener('mousedown', handleMouseDown);
+                        canvas.addEventListener('mousemove', handleMouseMove);
+                        canvas.addEventListener('mouseup', handleMouseUp);
+                        canvas.addEventListener('mouseleave', handleMouseUp);
                         
-                        canvas.addEventListener('mouseout', stopDrawing);
+                        // Make canvas visible
+                        canvasContainer.classList.add('canvas-visible');
+                        
+                        // Update the flag
+                        canvasActivated = true;
                     }
                     
-                    // Now wait before showing response (after input transition is complete)
+                    // Simple function to handle reaching message limit
+                    function handleMessageLimit() {
+                        // Get the cursor element
+                        const cursor = document.getElementById('cursor');
+                        
+                        // Apply the special fading animation class
+                        if (cursor) {
+                            cursor.classList.add('fading-cursor');
+                        }
+                        
+                        // Disable input
+                        hiddenInput.disabled = true;
+                    }
+                    
+                    // Now wait before showing response
                     setTimeout(async () => {
                         try {
                             const response = await fetch('/api/mirror', {
@@ -339,6 +523,14 @@
                             responseItem.classList.add('conversation-item', 'response-text');
                             responseItem.textContent = data.reply;
                             conversation.prepend(responseItem);
+                            
+                            // Increment message count again (response counts as a message)
+                            messageCount++;
+                            
+                            // Check if we've reached the message limit
+                            if (messageCount >= MESSAGE_LIMIT) {
+                                handleMessageLimit();
+                            }
 
                         } catch (error) {
                             console.error('Error:', error);
@@ -361,9 +553,27 @@
                             responseItem.classList.add('conversation-item', 'response-text');
                             responseItem.textContent = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
                             conversation.prepend(responseItem);
+                            
+                            // Increment message count again (fallback response counts as a message)
+                            messageCount++;
+                            
+                            // Check if we've reached the message limit
+                            if (messageCount >= MESSAGE_LIMIT) {
+                                // Get the cursor element and hide it
+                                const cursor = document.getElementById('cursor');
+                                if (cursor) {
+                                    cursor.style.cssText = 'display: none;';
+                                }
+                                
+                                // Disable input
+                                hiddenInput.disabled = true;
+                                
+                                // Show message limit reached visually
+                                inputLine.style.opacity = '0.5';
+                            }
                         }
-                    }, 500); // Short delay after input appears before showing response
-                }, 500); // Wait for 0.5s fade-out to complete (was 2000ms)
+                    }, 500);
+                }, 500);
             }
         });
     </script>
