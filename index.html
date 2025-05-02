@@ -107,13 +107,13 @@
 
     #canvas-container {
       position: fixed;
-      top: 0;
       left: 0;
-      width: 100vw;
-      height: 45vh;
+      right: 0;
+      top: calc(50% + 15px);
+      bottom: 0;
+      display: none;
       opacity: 0;
       transition: opacity 0.3s ease;
-      display: none;
     }
 
     #drawing-canvas {
@@ -180,19 +180,11 @@
       if (messageCount < 8) hiddenInput.focus();
     }
 
-    function positionCanvas() {
-      const cursorRect = cursor.getBoundingClientRect();
-      canvasContainer.style.top = (cursorRect.bottom) + 'px';
-    }
-
     function setupCanvas() {
-      positionCanvas();
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = canvasContainer.offsetWidth * dpr;
-      canvas.height = canvasContainer.offsetHeight * dpr;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
       ctx.scale(dpr, dpr);
-      canvas.style.width = canvasContainer.offsetWidth + 'px';
-      canvas.style.height = canvasContainer.offsetHeight + 'px';
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -229,7 +221,6 @@
       window.addEventListener('resize', () => {
         if (canvasActivated) {
           setupCanvas();
-          positionCanvas();
         }
       });
     };
@@ -265,7 +256,6 @@
 
           if (!canvasActivated) {
             canvasContainer.style.display = 'block';
-            positionCanvas();
             canvasActivated = true;
             setupCanvas();
             canvas.addEventListener('mousedown', startDrawing);
