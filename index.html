@@ -59,6 +59,13 @@
       50% { opacity: 1; }
     }
 
+    @keyframes final-breath {
+      0%   { opacity: 0.6; transform: scaleY(1); }
+      30%  { opacity: 1;   transform: scaleY(1.4); }
+      60%  { opacity: 0.6; transform: scaleY(1); }
+      100% { opacity: 0;   transform: scaleY(1); }
+    }
+
     #hidden-input {
       position: absolute;
       opacity: 0;
@@ -94,7 +101,7 @@
     .response-text {
       color: #666;
       opacity: 0;
-      animation: fadeIn 2s forwards;
+      animation: fadeIn 1.2s ease-out forwards;
     }
 
     .smooth-transition {
@@ -313,13 +320,7 @@
 
             if (messageCount >= 8) {
               setTimeout(() => {
-                const currentOpacity = window.getComputedStyle(cursor).opacity;
-                cursor.style.opacity = currentOpacity;
-                cursor.style.animation = 'none';
-                requestAnimationFrame(() => {
-                  cursor.style.transition = 'opacity 5s ease-out';
-                  cursor.style.opacity = '0';
-                });
+                cursor.style.animation = 'final-breath 5s forwards ease-out';
                 hiddenInput.disabled = true;
                 hiddenInput.blur();
               }, 2000);
