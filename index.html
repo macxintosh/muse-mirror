@@ -317,9 +317,8 @@
                 cursor.style.opacity = currentOpacity;
                 cursor.style.animation = 'none';
                 requestAnimationFrame(() => {
-                  cursor.style.transition = 'opacity 5s ease-out, transform 5s ease-out';
+                  cursor.style.transition = 'opacity 5s ease-out';
                   cursor.style.opacity = '0';
-                  cursor.style.transform = 'translateY(8px)';
                 });
                 hiddenInput.disabled = true;
                 hiddenInput.blur();
