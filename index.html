@@ -59,6 +59,12 @@
             50% { opacity: 1; }
         }
 
+        @keyframes fadeOut {
+            from { opacity: 0.2; }
+            50% { opacity: 1; }
+            to { opacity: 0; }
+        }
+
         #hidden-input {
             position: absolute;
             opacity: 0;
@@ -126,6 +132,16 @@
         .canvas-visible {
             opacity: 1 !important;
         }
+        
+        #drawing-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        
+        .canvas-visible {
+            opacity: 1 !important;
+        }
 
         /* Fade out animation for cursor */
         .cursor-fade-out {
@@ -167,6 +183,7 @@
         let canvasActivated = false; // Flag to track if canvas has been activated
         let messageCount = 0; // Counter for messages
         const MESSAGE_LIMIT = 8; // Maximum number of messages
+        let cursorFaded = false; // Flag to track cursor fade status
 
         function focusInput() {
             hiddenInput.focus();
@@ -240,19 +257,27 @@
         // Function to disable input after message limit is reached
         function disableInput() {
             hiddenInput.disabled = true;
-            // Fade out cursor naturally on its last breath
-            cursor.classList.add('cursor-fade-out');
-            // Stop listening to events
-            document.removeEventListener('click', focusInput);
-            inputLine.removeEventListener('click', focusInput);
-            // Also disable canvas
-            canvas.removeEventListener('mousedown', startDrawing);
-            canvas.removeEventListener('mousemove', draw);
-            canvas.removeEventListener('mouseup', stopDrawing);
-            canvas.removeEventListener('mouseout', stopDrawing);
-            canvas.removeEventListener('touchstart', handleTouchStart);
-            canvas.removeEventListener('touchmove', handleTouchMove);
-            canvas.removeEventListener('touchend', handleTouchEnd);
+            
+            // Wait for the next "breath" cycle of the cursor, then fade out
+            if (!cursorFaded) {
+                cursorFaded = true;
+                
+                // Remove the breathing animation first
+                cursor.style.animation = 'none';
+                
+                // Force a reflow
+                void cursor.offsetWidth;
+                
+                // Apply the fade out animation
+                cursor.style.animation = 'fadeOut 2s forwards';
+                
+                // Stop listening to events
+                document.removeEventListener('click', focusInput);
+                inputLine.removeEventListener('click', focusInput);
+                
+                // Keep canvas active and drawing enabled
+                // DO NOT disable canvas events - keep drawing enabled
+            }
         }
 
         // Touch event handlers with proper binding
