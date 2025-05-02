@@ -59,12 +59,6 @@
             50% { opacity: 1; }
         }
 
-        @keyframes fadeOut {
-            from { opacity: 0.2; }
-            50% { opacity: 1; }
-            to { opacity: 0; }
-        }
-
         #hidden-input {
             position: absolute;
             opacity: 0;
@@ -132,26 +126,6 @@
         .canvas-visible {
             opacity: 1 !important;
         }
-        
-        #drawing-canvas {
-            width: 100%;
-            height: 100%;
-            cursor: crosshair;
-        }
-        
-        .canvas-visible {
-            opacity: 1 !important;
-        }
-
-        /* Fade out animation for cursor */
-        .cursor-fade-out {
-            animation: fadeOut 2s forwards;
-        }
-
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
     </style>
 </head>
 <body>
@@ -175,15 +149,11 @@
         const canvasContainer = document.getElementById('canvas-container');
         const canvas = document.getElementById('drawing-canvas');
         const ctx = canvas.getContext('2d');
-        const cursor = document.getElementById('cursor');
         
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
         let canvasActivated = false; // Flag to track if canvas has been activated
-        let messageCount = 0; // Counter for messages
-        const MESSAGE_LIMIT = 8; // Maximum number of messages
-        let cursorFaded = false; // Flag to track cursor fade status
 
         function focusInput() {
             hiddenInput.focus();
@@ -253,57 +223,6 @@
         function stopDrawing() {
             isDrawing = false;
         }
-
-        // Function to disable input after message limit is reached
-        function disableInput() {
-            hiddenInput.disabled = true;
-            
-            // Wait for the next "breath" cycle of the cursor, then fade out
-            if (!cursorFaded) {
-                cursorFaded = true;
-                
-                // Remove the breathing animation first
-                cursor.style.animation = 'none';
-                
-                // Force a reflow
-                void cursor.offsetWidth;
-                
-                // Apply the fade out animation
-                cursor.style.animation = 'fadeOut 2s forwards';
-                
-                // Stop listening to events
-                document.removeEventListener('click', focusInput);
-                inputLine.removeEventListener('click', focusInput);
-                
-                // Keep canvas active and drawing enabled
-                // DO NOT disable canvas events - keep drawing enabled
-            }
-        }
-
-        // Touch event handlers with proper binding
-        function handleTouchStart(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent('mousedown', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            canvas.dispatchEvent(mouseEvent);
-        }
-
-        function handleTouchMove(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent('mousemove', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            canvas.dispatchEvent(mouseEvent);
-        }
-
-        function handleTouchEnd() {
-            canvas.dispatchEvent(new MouseEvent('mouseup'));
-        }
         
         // Initialize
         window.onload = function() {
@@ -322,8 +241,8 @@
         };
         
         document.addEventListener('click', function(e) {
-            // Only focus input if not clicking on canvas and input is not disabled
-            if (e.target !== canvas && !hiddenInput.disabled) {
+            // Only focus input if not clicking on canvas
+            if (e.target !== canvas) {
                 focusInput();
             }
         });
@@ -335,7 +254,7 @@
         });
 
         hiddenInput.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter' && hiddenInput.value.trim() !== '' && !hiddenInput.disabled) {
+            if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
                 e.preventDefault();
 
                 const userText = hiddenInput.value.trim();
@@ -347,9 +266,6 @@
                 const userItem = document.createElement('div');
                 userItem.classList.add('conversation-item', 'user-text');
                 userItem.textContent = userText;
-                
-                // Increment message counter (user message)
-                messageCount++;
                 
                 // Smoothly transition the input text out
                 displayedText.style.opacity = '0';
@@ -379,11 +295,32 @@
                         
                         // Re-attach event listeners to ensure they work
                         canvas.addEventListener('mousedown', startDrawing);
-                        canvas.addEventListener('touchstart', handleTouchStart);
+                        canvas.addEventListener('touchstart', function(e) {
+                            e.preventDefault();
+                            const touch = e.touches[0];
+                            const mouseEvent = new MouseEvent('mousedown', {
+                                clientX: touch.clientX,
+                                clientY: touch.clientY
+                            });
+                            canvas.dispatchEvent(mouseEvent);
+                        });
+                        
                         canvas.addEventListener('mousemove', draw);
-                        canvas.addEventListener('touchmove', handleTouchMove);
+                        canvas.addEventListener('touchmove', function(e) {
+                            e.preventDefault();
+                            const touch = e.touches[0];
+                            const mouseEvent = new MouseEvent('mousemove', {
+                                clientX: touch.clientX,
+                                clientY: touch.clientY
+                            });
+                            canvas.dispatchEvent(mouseEvent);
+                        });
+                        
                         canvas.addEventListener('mouseup', stopDrawing);
-                        canvas.addEventListener('touchend', handleTouchEnd);
+                        canvas.addEventListener('touchend', function() {
+                            canvas.dispatchEvent(new MouseEvent('mouseup'));
+                        });
+                        
                         canvas.addEventListener('mouseout', stopDrawing);
                     }
                     
@@ -402,17 +339,6 @@
                             responseItem.classList.add('conversation-item', 'response-text');
                             responseItem.textContent = data.reply;
                             conversation.prepend(responseItem);
-
-                            // Increment message counter (response message)
-                            messageCount++;
-                            
-                            // Check if we've reached the message limit
-                            if (messageCount >= MESSAGE_LIMIT) {
-                                // Wait for 2 seconds after the last message is shown before disabling
-                                setTimeout(() => {
-                                    disableInput();
-                                }, 2000);
-                            }
 
                         } catch (error) {
                             console.error('Error:', error);
@@ -435,20 +361,9 @@
                             responseItem.classList.add('conversation-item', 'response-text');
                             responseItem.textContent = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
                             conversation.prepend(responseItem);
-                            
-                            // Increment message counter (fallback response message)
-                            messageCount++;
-                            
-                            // Check if we've reached the message limit
-                            if (messageCount >= MESSAGE_LIMIT) {
-                                // Wait for 2 seconds after the last message is shown before disabling
-                                setTimeout(() => {
-                                    disableInput();
-                                }, 2000);
-                            }
                         }
                     }, 500); // Short delay after input appears before showing response
-                }, 500); // Wait for 0.5s fade-out to complete
+                }, 500); // Wait for 0.5s fade-out to complete (was 2000ms)
             }
         });
     </script>
