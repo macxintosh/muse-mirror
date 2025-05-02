@@ -20,13 +20,6 @@
       width: 100vw;
       overflow: hidden;
       position: relative;
-      /* Remove any potential top borders or lines */
-      border-top: none;
-    }
-
-    /* Remove any pseudo-elements that might create lines */
-    body::before, body::after {
-      content: none !important;
     }
 
     #fixed-center {
@@ -42,8 +35,6 @@
       display: flex;
       align-items: center;
       height: 30px;
-      /* Ensure no borders on the input line */
-      border: none;
     }
 
     #displayed-text {
@@ -61,7 +52,6 @@
       background-color: #333;
       animation: breathe 4.5s infinite ease-in-out;
       margin-left: 1px;
-      position: relative; /* Ensure proper positioning */
     }
 
     @keyframes breathe {
@@ -124,18 +114,12 @@
       opacity: 0;
       transition: opacity 0.3s ease;
       display: none;
-      /* Ensure no borders on canvas container */
-      border: none;
-      outline: none;
     }
 
     #drawing-canvas {
       width: 100%;
       height: 100%;
       cursor: crosshair;
-      /* Remove any borders on canvas */
-      border: none;
-      outline: none;
     }
 
     /* New gradient overlay for canvas */
@@ -151,27 +135,10 @@
                   rgba(255,255,255,0.9) 10%, 
                   rgba(255,255,255,0.5) 30%, 
                   rgba(255,255,255,0) 50%);
-      /* Ensure no borders on gradient */
-      border: none;
     }
 
     .canvas-visible {
       opacity: 1 !important;
-    }
-    
-    /* Responsive styling for mobile */
-    @media (max-width: 768px) {
-      #fixed-center {
-        width: 95%;
-      }
-      
-      /* Fix for potential line at top */
-      body::before, body::after,
-      #canvas-container::before, #canvas-container::after,
-      #fixed-center::before, #fixed-center::after {
-        display: none;
-        content: none;
-      }
     }
   </style>
 </head>
@@ -264,10 +231,6 @@
           positionCanvas();
         }
       });
-      
-      // Fix for mobile - ensure no unwanted lines
-      document.body.style.borderTop = 'none';
-      document.body.style.borderBottom = 'none';
     };
 
     document.addEventListener('click', (e) => {
