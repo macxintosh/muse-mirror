@@ -1,371 +1,326 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Muse Mirror</title>
-    <style>
-        @import url('https://fonts.cdnjs.com/css2?family=Inter:wght@300;400&display=swap');
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Muse Mirror</title>
+  <style>
+    @import url('https://fonts.cdnjs.com/css2?family=Inter:wght@300;400&display=swap');
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: white;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            position: relative;
-        }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: white;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      position: relative;
+    }
 
-        #fixed-center {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 800px;
-        }
+    #fixed-center {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 800px;
+    }
 
-        #input-line {
-            display: flex;
-            align-items: center;
-            height: 30px;
-        }
+    #input-line {
+      display: flex;
+      align-items: center;
+      height: 30px;
+    }
 
-        #displayed-text {
-            font-weight: 300;
-            font-size: 20px;
-            letter-spacing: -0.01em;
-            color: #333;
-            white-space: pre;
-        }
+    #displayed-text {
+      font-weight: 300;
+      font-size: 20px;
+      letter-spacing: -0.01em;
+      color: #333;
+      white-space: pre;
+    }
 
-        #cursor {
-            display: inline-block;
-            width: 2px;
-            height: 24px;
-            background-color: #333;
-            animation: breathe 4.5s infinite ease-in-out;
-            margin-left: 1px;
-        }
+    #cursor {
+      display: inline-block;
+      width: 2px;
+      height: 24px;
+      background-color: #333;
+      animation: breathe 4.5s infinite ease-in-out;
+      margin-left: 1px;
+    }
 
-        @keyframes breathe {
-            0%, 100% { opacity: 0.2; }
-            50% { opacity: 1; }
-        }
+    @keyframes breathe {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 1; }
+    }
 
-        #hidden-input {
-            position: absolute;
-            opacity: 0;
-            height: 0;
-            width: 0;
-        }
+    #hidden-input {
+      position: absolute;
+      opacity: 0;
+      height: 0;
+      width: 0;
+    }
 
-        #conversation {
-            position: absolute;
-            width: 100%;
-            max-height: 45vh;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column-reverse;
-            bottom: 100%;
-            margin-bottom: 10px;
-        }
+    #conversation {
+      position: absolute;
+      width: 100%;
+      max-height: 45vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      bottom: 100%;
+      margin-bottom: 10px;
+    }
 
-        .conversation-item {
-            margin-bottom: 10px;
-            font-size: 20px;
-            letter-spacing: -0.01em;
-            font-weight: 300;
-            line-height: 1.5;
-            text-align: left;
-            transition: transform 0.4s ease-out;
-        }
+    .conversation-item {
+      margin-bottom: 10px;
+      font-size: 20px;
+      letter-spacing: -0.01em;
+      font-weight: 300;
+      line-height: 1.5;
+      text-align: left;
+      transition: transform 0.4s ease-out;
+    }
 
-        .user-text { 
-            color: #333;
-        }
-        
-        .response-text { 
-            color: #666;
-            opacity: 0;
-            animation: fadeIn 2s forwards;
-        }
-        
-        .smooth-transition {
-            transition: opacity 0.5s ease-out;
-        }
+    .user-text {
+      color: #333;
+    }
 
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
-        
-        /* Canvas drawing area */
-        #canvas-container {
-            position: fixed;
-            width: 100vw;
-            height: 45vh;
-            left: 0;
-            right: 0;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            display: none; /* Initially hidden completely */
-        }
-        
-        #drawing-canvas {
-            width: 100%;
-            height: 100%;
-            cursor: crosshair;
-        }
-        
-        .canvas-visible {
-            opacity: 1 !important;
-        }
-    </style>
+    .response-text {
+      color: #666;
+      opacity: 0;
+      animation: fadeIn 2s forwards;
+    }
+
+    .smooth-transition {
+      transition: opacity 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    #canvas-container {
+      position: fixed;
+      width: 100vw;
+      height: 45vh;
+      left: 0;
+      right: 0;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      display: none;
+    }
+
+    #drawing-canvas {
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    .canvas-visible {
+      opacity: 1 !important;
+    }
+  </style>
 </head>
 <body>
-    <div id="fixed-center">
-        <div id="conversation"></div>
-        <div id="input-line">
-            <span id="displayed-text"></span>
-            <span id="cursor"></span>
-            <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-        </div>
+  <div id="fixed-center">
+    <div id="conversation"></div>
+    <div id="input-line">
+      <span id="displayed-text"></span>
+      <span id="cursor"></span>
+      <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
     </div>
-    <div id="canvas-container">
-        <canvas id="drawing-canvas"></canvas>
-    </div>
+  </div>
+  <div id="canvas-container">
+    <canvas id="drawing-canvas"></canvas>
+  </div>
 
-    <script>
-        const hiddenInput = document.getElementById('hidden-input');
-        const displayedText = document.getElementById('displayed-text');
-        const conversation = document.getElementById('conversation');
-        const inputLine = document.getElementById('input-line');
-        const canvasContainer = document.getElementById('canvas-container');
-        const canvas = document.getElementById('drawing-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
-        let canvasActivated = false; // Flag to track if canvas has been activated
+  <script>
+    const hiddenInput = document.getElementById('hidden-input');
+    const displayedText = document.getElementById('displayed-text');
+    const conversation = document.getElementById('conversation');
+    const cursor = document.getElementById('cursor');
+    const canvasContainer = document.getElementById('canvas-container');
+    const canvas = document.getElementById('drawing-canvas');
+    const ctx = canvas.getContext('2d');
 
-        function focusInput() {
-            hiddenInput.focus();
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let canvasActivated = false;
+    let messageCount = 0;
+
+    const fallbackResponses = [
+      "The quietest answer is often the most profound.",
+      "Your words create the space between thoughts.",
+      "Reflections aren't answers—they're continuations of questions.",
+      "What if the question itself is the journey?",
+      "Sometimes clarity comes from simply hearing yourself think.",
+      "In stillness, even incomplete thoughts find their meaning.",
+      "The mirror doesn't judge what it reflects.",
+      "Your voice carries more wisdom than you realize.",
+      "Between intention and expression lies a universe of meaning.",
+      "The pause after a thought is where understanding begins."
+    ];
+
+    function focusInput() {
+      if (messageCount < 8) hiddenInput.focus();
+    }
+
+    function positionCanvas() {
+      const cursorRect = cursor.getBoundingClientRect();
+      canvasContainer.style.top = (cursorRect.bottom) + 'px';
+    }
+
+    function setupCanvas() {
+      positionCanvas();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvasContainer.offsetWidth * dpr;
+      canvas.height = canvasContainer.offsetHeight * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = canvasContainer.offsetWidth + 'px';
+      canvas.style.height = canvasContainer.offsetHeight + 'px';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#000';
+    }
+
+    function startDrawing(e) {
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      lastX = e.clientX - rect.left;
+      lastY = e.clientY - rect.top;
+      canvasContainer.classList.add('canvas-visible');
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const currentX = e.clientX - rect.left;
+      const currentY = e.clientY - rect.top;
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(currentX, currentY);
+      ctx.stroke();
+      lastX = currentX;
+      lastY = currentY;
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    window.onload = function () {
+      focusInput();
+      window.addEventListener('resize', () => {
+        if (canvasActivated) {
+          setupCanvas();
+          positionCanvas();
         }
+      });
+    };
 
-        // Set canvas position dynamically based on cursor position
-        function positionCanvas() {
-            const cursorElement = document.getElementById('cursor');
-            const cursorRect = cursorElement.getBoundingClientRect();
-            
-            // Position canvas right at the bottom of the cursor
-            canvasContainer.style.top = (cursorRect.bottom) + 'px';
-        }
-        
-        // Set up canvas with high resolution
-        function setupCanvas() {
-            // Position the canvas based on cursor position
+    document.addEventListener('click', (e) => {
+      if (e.target !== canvas) focusInput();
+    });
+
+    document.getElementById('input-line').addEventListener('click', focusInput);
+
+    hiddenInput.addEventListener('input', () => {
+      displayedText.textContent = hiddenInput.value;
+    });
+
+    hiddenInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
+        e.preventDefault();
+        if (messageCount >= 8) return;
+
+        const userText = hiddenInput.value.trim();
+        displayedText.classList.add('smooth-transition');
+        const userItem = document.createElement('div');
+        userItem.classList.add('conversation-item', 'user-text');
+        userItem.textContent = userText;
+        displayedText.style.opacity = '0';
+
+        setTimeout(() => {
+          hiddenInput.value = '';
+          displayedText.textContent = '';
+          displayedText.style.opacity = '1';
+          conversation.prepend(userItem);
+          messageCount++;
+
+          if (!canvasActivated) {
+            canvasContainer.style.display = 'block';
             positionCanvas();
-            
-            // Get the display pixel ratio for high-resolution displays
-            const dpr = window.devicePixelRatio || 1;
-            
-            // Set actual size in memory (scaled to account for extra pixel density)
-            canvas.width = canvasContainer.offsetWidth * dpr;
-            canvas.height = canvasContainer.offsetHeight * dpr;
-            
-            // Scale the context to ensure correct drawing operations
-            ctx.scale(dpr, dpr);
-            
-            // Set display size (CSS pixels)
-            canvas.style.width = canvasContainer.offsetWidth + 'px';
-            canvas.style.height = canvasContainer.offsetHeight + 'px';
-            
-            // Set drawing parameters
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = '#000';
-        }
-        
-        // Drawing functions
-        function startDrawing(e) {
-            isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            lastX = e.clientX - rect.left;
-            lastY = e.clientY - rect.top;
-            // Make canvas visible when drawing starts
-            canvasContainer.classList.add('canvas-visible');
-        }
-        
-        function draw(e) {
-            if (!isDrawing) return;
-            
-            const rect = canvas.getBoundingClientRect();
-            const currentX = e.clientX - rect.left;
-            const currentY = e.clientY - rect.top;
-            
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(currentX, currentY);
-            ctx.stroke();
-            
-            lastX = currentX;
-            lastY = currentY;
-        }
-        
-        function stopDrawing() {
-            isDrawing = false;
-        }
-        
-        // Initialize
-        window.onload = function() {
-            focusInput();
-            
-            // Don't initialize canvas yet, wait for first input
-            // We'll set it up after the first input is processed
-            
-            // Handle resize
-            window.addEventListener('resize', function() {
-                if (canvasActivated) {
-                    setupCanvas();
-                    positionCanvas();
-                }
+            canvasActivated = true;
+            setupCanvas();
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            canvas.addEventListener('touchstart', function (e) {
+              e.preventDefault();
+              const touch = e.touches[0];
+              canvas.dispatchEvent(new MouseEvent('mousedown', {
+                clientX: touch.clientX, clientY: touch.clientY
+              }));
             });
-        };
-        
-        document.addEventListener('click', function(e) {
-            // Only focus input if not clicking on canvas
-            if (e.target !== canvas) {
-                focusInput();
+            canvas.addEventListener('touchmove', function (e) {
+              e.preventDefault();
+              const touch = e.touches[0];
+              canvas.dispatchEvent(new MouseEvent('mousemove', {
+                clientX: touch.clientX, clientY: touch.clientY
+              }));
+            });
+            canvas.addEventListener('touchend', () => {
+              canvas.dispatchEvent(new MouseEvent('mouseup'));
+            });
+          }
+
+          setTimeout(async () => {
+            let responseText;
+            try {
+              const response = await fetch('/api/mirror', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userText })
+              });
+              const data = await response.json();
+              responseText = data.reply;
+            } catch (error) {
+              responseText = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
             }
-        });
-        
-        inputLine.addEventListener('click', focusInput);
 
-        hiddenInput.addEventListener('input', () => {
-            displayedText.textContent = hiddenInput.value;
-        });
+            const responseItem = document.createElement('div');
+            responseItem.classList.add('conversation-item', 'response-text');
+            responseItem.textContent = responseText;
+            conversation.prepend(responseItem);
+            messageCount++;
 
-        hiddenInput.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
-                e.preventDefault();
-
-                const userText = hiddenInput.value.trim();
-                
-                // Add transition class with faster fade-out (0.5s)
-                displayedText.classList.add('smooth-transition');
-                
-                // Create user message element
-                const userItem = document.createElement('div');
-                userItem.classList.add('conversation-item', 'user-text');
-                userItem.textContent = userText;
-                
-                // Smoothly transition the input text out
-                displayedText.style.opacity = '0';
-                
-                // Wait for shorter fade-out transition to complete
-                setTimeout(() => {
-                    // Clear input
-                    hiddenInput.value = '';
-                    displayedText.textContent = '';
-                    
-                    // Reset opacity for next input
-                    displayedText.style.opacity = '1';
-                    
-                    // Add the message to conversation
-                    conversation.prepend(userItem);
-                    
-                    // After first input, make canvas available
-                    if (!canvasActivated) {
-                        canvasContainer.style.display = 'block';
-                        // Position the canvas properly
-                        positionCanvas();
-                        // Update the flag
-                        canvasActivated = true;
-                        
-                        // Re-initialize canvas now that it's visible
-                        setupCanvas();
-                        
-                        // Re-attach event listeners to ensure they work
-                        canvas.addEventListener('mousedown', startDrawing);
-                        canvas.addEventListener('touchstart', function(e) {
-                            e.preventDefault();
-                            const touch = e.touches[0];
-                            const mouseEvent = new MouseEvent('mousedown', {
-                                clientX: touch.clientX,
-                                clientY: touch.clientY
-                            });
-                            canvas.dispatchEvent(mouseEvent);
-                        });
-                        
-                        canvas.addEventListener('mousemove', draw);
-                        canvas.addEventListener('touchmove', function(e) {
-                            e.preventDefault();
-                            const touch = e.touches[0];
-                            const mouseEvent = new MouseEvent('mousemove', {
-                                clientX: touch.clientX,
-                                clientY: touch.clientY
-                            });
-                            canvas.dispatchEvent(mouseEvent);
-                        });
-                        
-                        canvas.addEventListener('mouseup', stopDrawing);
-                        canvas.addEventListener('touchend', function() {
-                            canvas.dispatchEvent(new MouseEvent('mouseup'));
-                        });
-                        
-                        canvas.addEventListener('mouseout', stopDrawing);
-                    }
-                    
-                    // Now wait before showing response (after input transition is complete)
-                    setTimeout(async () => {
-                        try {
-                            const response = await fetch('/api/mirror', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ message: userText })
-                            });
-
-                            const data = await response.json();
-
-                            const responseItem = document.createElement('div');
-                            responseItem.classList.add('conversation-item', 'response-text');
-                            responseItem.textContent = data.reply;
-                            conversation.prepend(responseItem);
-
-                        } catch (error) {
-                            console.error('Error:', error);
-                            
-                            // Fallback in case API fails
-                            const fallbackResponses = [
-                                "The quietest answer is often the most profound.",
-                                "Your words create the space between thoughts.",
-                                "Reflections aren't answers—they're continuations of questions.",
-                                "What if the question itself is the journey?",
-                                "Sometimes clarity comes from simply hearing yourself think.",
-                                "In stillness, even incomplete thoughts find their meaning.",
-                                "The mirror doesn't judge what it reflects.",
-                                "Your voice carries more wisdom than you realize.",
-                                "Between intention and expression lies a universe of meaning.",
-                                "The pause after a thought is where understanding begins."
-                            ];
-                            
-                            const responseItem = document.createElement('div');
-                            responseItem.classList.add('conversation-item', 'response-text');
-                            responseItem.textContent = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-                            conversation.prepend(responseItem);
-                        }
-                    }, 500); // Short delay after input appears before showing response
-                }, 500); // Wait for 0.5s fade-out to complete (was 2000ms)
+            if (messageCount >= 8) {
+              setTimeout(() => {
+                const currentOpacity = window.getComputedStyle(cursor).opacity;
+                cursor.style.opacity = currentOpacity;
+                cursor.style.animation = 'none';
+                requestAnimationFrame(() => {
+                  cursor.style.transition = 'opacity 5s ease-out, transform 5s ease-out';
+                  cursor.style.opacity = '0';
+                  cursor.style.transform = 'translateY(8px)';
+                });
+                hiddenInput.disabled = true;
+                hiddenInput.blur();
+              }, 2000);
             }
-        });
-    </script>
+          }, 500);
+        }, 500);
+      }
+    });
+  </script>
 </body>
 </html>
