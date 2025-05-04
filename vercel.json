@@ -5,9 +5,6 @@
         "runtime": "nodejs18.x"
       }
     },
-    "buildCommand": "",
-    "outputDirectory": "",
-    "devCommand": "",
     "rewrites": [
       { "source": "/api/(.*)", "destination": "/api/$1" },
       { "source": "/(.*)", "destination": "/index.html" }
