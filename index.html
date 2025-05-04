@@ -4,43 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Muse Mirror</title>
+  <!-- Firebase & Stripe SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
+    @import url('https://fonts.cdnjs.com/css2?family=Inter:wght@300;400&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Inter', sans-serif;
       background-color: white;
-      margin: 0;
-      padding: 0;
+      height: 100vh;
+      width: 100vw;
       overflow: hidden;
-    }
-    #settings-icon {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 1s;
-      font-size: 24px;
-    }
-    #settings-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(255,255,255,0.95);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-    input, button {
-      margin: 5px;
-      padding: 10px;
-      font-size: 16px;
+      position: relative;
     }
     #fixed-center {
       position: absolute;
@@ -53,10 +31,11 @@
     #input-line {
       display: flex;
       align-items: center;
+      height: 30px;
     }
     #displayed-text {
-      font-size: 20px;
       font-weight: 300;
+      font-size: 20px;
       letter-spacing: -0.01em;
       color: #333;
       white-space: pre;
@@ -80,19 +59,89 @@
       width: 0;
     }
     #conversation {
+      position: absolute;
+      width: 100%;
       max-height: 45vh;
       overflow-y: auto;
       display: flex;
       flex-direction: column-reverse;
+      bottom: 100%;
+      margin-bottom: 10px;
     }
     .conversation-item {
       margin-bottom: 10px;
       font-size: 20px;
+      letter-spacing: -0.01em;
       font-weight: 300;
+      line-height: 1.5;
+      text-align: left;
+      transition: transform 0.4s ease-out;
     }
     .user-text { color: #333; }
-    .response-text { color: #666; opacity: 0; animation: fadeIn 2s forwards; }
+    .response-text {
+      color: #666;
+      opacity: 0;
+      animation: fadeIn 2s forwards;
+    }
     @keyframes fadeIn { to { opacity: 1; } }
+    #canvas-container {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: calc(50% + 15px);
+      bottom: 0;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #drawing-canvas {
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      background-color: white;
+    }
+    #canvas-gradient {
+      position: absolute;
+      top: -2px;
+      left: 0;
+      width: 100%;
+      height: calc(100% + 2px);
+      pointer-events: none;
+      background: linear-gradient(to bottom,
+        rgba(255, 255, 255, 1) 0%,
+        rgba(255, 255, 255, 0.96) 4%,
+        rgba(255, 255, 255, 0.8) 10%,
+        rgba(255, 255, 255, 0.4) 18%,
+        rgba(255, 255, 255, 0) 30%);
+    }
+    .canvas-visible { opacity: 1 !important; }
+    #settings-icon {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 1s;
+    }
+    #settings-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255, 255, 255, 0.95);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    #settings-modal input, #settings-modal button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -102,7 +151,7 @@
     <input type="password" id="password" placeholder="Password">
     <button onclick="signUp()">Sign Up</button>
     <button onclick="signIn()">Sign In</button>
-    <button onclick="subscribePremium()">Subscribe Premium ($5)</button>
+    <button onclick="subscribePremium()">Subscribe Premium</button>
     <button onclick="logout()">Sign Out</button>
     <div id="auth-message"></div>
   </div>
@@ -111,11 +160,15 @@
     <div id="input-line">
       <span id="displayed-text"></span>
       <span id="cursor"></span>
-      <input type="text" id="hidden-input" autocomplete="off" />
+      <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
     </div>
   </div>
-
+  <div id="canvas-container">
+    <canvas id="drawing-canvas"></canvas>
+    <div id="canvas-gradient"></div>
+  </div>
   <script>
+    // Firebase init
     const firebaseConfig = {
       apiKey: "AIzaSyBaIUFWW8wm0qWnz_LlFd0sECpaKav3YjaE",
       authDomain: "muse-mirror-bfc94.firebaseapp.com",
@@ -124,53 +177,57 @@
       messagingSenderId: "642869976281",
       appId: "1:642869976281:web:d17bccca98cd62362db2c8"
     };
-    const firebaseApp = firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
     const stripe = Stripe("pk_test_51RKsC3RLBoNQf97bMRwplx9fLVOb9rOW0DW8DEXtdlJHidcFA68vvsJKGrJVil4Ug0VApK1Fk5QhQmVcSOCrjXwC00n3kZb0Ts");
 
-    const settingsIcon = document.getElementById('settings-icon');
-    const settingsModal = document.getElementById('settings-modal');
-    const cursor = document.getElementById('cursor');
+    let isPremiumUser = false;
+    let messageCount = 0;
+    let exchangeCount = 0;
+    let canvasActivated = false;
+    let fallbackResponses = ["My reflections are caught somewhere between worlds. Try again soon."];
+
     const hiddenInput = document.getElementById('hidden-input');
     const displayedText = document.getElementById('displayed-text');
     const conversation = document.getElementById('conversation');
-    let messageCount = 0;
-    let exchangeCount = 0;
-    let isPremium = false;
+    const cursor = document.getElementById('cursor');
+    const canvasContainer = document.getElementById('canvas-container');
+    const canvas = document.getElementById('drawing-canvas');
+    const ctx = canvas.getContext('2d');
 
-    settingsIcon.onclick = () => settingsModal.style.display = 'flex';
+    document.getElementById('settings-icon').onclick = () => {
+      document.getElementById('settings-modal').style.display = 'flex';
+    };
 
     auth.onAuthStateChanged(async user => {
       if (user) {
         const doc = await db.collection('users').doc(user.uid).get();
         const data = doc.data();
-        isPremium = data.subscription === 'premium';
+        isPremiumUser = data.subscription === 'premium';
       } else {
-        isPremium = false;
+        isPremiumUser = false;
       }
     });
 
     function signUp() {
-      auth.createUserWithEmailAndPassword(email.value, password.value).then(user => {
-        db.collection('users').doc(user.user.uid).set({ subscription: 'free', exchangesToday: 0 });
-        authMessage('Signed up');
-      }).catch(err => authMessage(err.message));
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(user => {
+          db.collection('users').doc(user.user.uid).set({ subscription: 'free', exchangesToday: 0 });
+        })
+        .catch(err => alert(err.message));
     }
 
     function signIn() {
-      auth.signInWithEmailAndPassword(email.value, password.value)
-        .then(() => authMessage('Signed in'))
-        .catch(err => authMessage(err.message));
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      auth.signInWithEmailAndPassword(email, password).catch(err => alert(err.message));
     }
 
     function logout() {
-      auth.signOut().then(() => authMessage('Signed out'));
-    }
-
-    function authMessage(msg) {
-      document.getElementById('auth-message').innerText = msg;
-      setTimeout(() => document.getElementById('auth-message').innerText = '', 3000);
+      auth.signOut();
     }
 
     async function subscribePremium() {
@@ -184,20 +241,47 @@
       stripe.redirectToCheckout({ sessionId: data.sessionId });
     }
 
-    function getTodayKey() {
-      return new Date().toISOString().slice(0, 10);
+    function focusInput() {
+      if (messageCount < 8) hiddenInput.focus();
     }
 
-    function getLocalExchangeCount() {
-      const saved = JSON.parse(localStorage.getItem('guestExchange') || '{}');
-      if (saved.date !== getTodayKey()) return 0;
-      return saved.count || 0;
+    function setupCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      ctx.scale(dpr, dpr);
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#000';
     }
 
-    function incrementLocalExchange() {
-      const count = getLocalExchangeCount() + 1;
-      localStorage.setItem('guestExchange', JSON.stringify({ date: getTodayKey(), count }));
+    function startDrawing(e) {
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      lastX = e.clientX - rect.left;
+      lastY = e.clientY - rect.top;
+      canvasContainer.classList.add('canvas-visible');
     }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const currentX = e.clientX - rect.left;
+      const currentY = e.clientY - rect.top;
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(currentX, currentY);
+      ctx.stroke();
+      lastX = currentX;
+      lastY = currentY;
+    }
+
+    function stopDrawing() { isDrawing = false; }
+
+    document.addEventListener('click', (e) => {
+      if (e.target !== canvas) focusInput();
+    });
 
     hiddenInput.addEventListener('input', () => {
       displayedText.textContent = hiddenInput.value;
@@ -205,41 +289,65 @@
 
     hiddenInput.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
+        e.preventDefault();
         if (messageCount >= 8) return;
-        if (!isPremium && exchangeCount >= 4) {
+        if (!isPremiumUser && exchangeCount >= 4) {
           alert("That's all the light I've got for now.");
           return;
         }
 
-        const text = hiddenInput.value.trim();
+        const userText = hiddenInput.value.trim();
         const userItem = document.createElement('div');
-        userItem.className = 'conversation-item user-text';
-        userItem.textContent = text;
+        userItem.classList.add('conversation-item', 'user-text');
+        userItem.textContent = userText;
         conversation.prepend(userItem);
-        displayedText.textContent = '';
         hiddenInput.value = '';
+        displayedText.textContent = '';
         messageCount++;
 
-        setTimeout(() => {
-          const reply = document.createElement('div');
-          reply.className = 'conversation-item response-text';
-          reply.textContent = '...'; // simulate reply
-          conversation.prepend(reply);
+        if (!canvasActivated) {
+          canvasContainer.style.display = 'block';
+          canvasActivated = true;
+          setupCanvas();
+          canvas.addEventListener('mousedown', startDrawing);
+          canvas.addEventListener('mousemove', draw);
+          canvas.addEventListener('mouseup', stopDrawing);
+          canvas.addEventListener('mouseout', stopDrawing);
+        }
+
+        setTimeout(async () => {
+          let responseText;
+          try {
+            const response = await fetch('/api/mirror', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: userText })
+            });
+            const data = await response.json();
+            responseText = data.reply;
+          } catch {
+            responseText = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+          }
+
+          const responseItem = document.createElement('div');
+          responseItem.classList.add('conversation-item', 'response-text');
+          responseItem.textContent = responseText;
+          conversation.prepend(responseItem);
           messageCount++;
 
           if (messageCount >= 8) {
             exchangeCount++;
             messageCount = 0;
-            if (!auth.currentUser) incrementLocalExchange();
+            hiddenInput.blur();
+            cursor.style.opacity = 0;
           }
         }, 500);
       }
     });
 
     window.onload = () => {
-      hiddenInput.focus();
-      if (getLocalExchangeCount() >= 4) alert("That's all the light I've got for now.");
-      setTimeout(() => settingsIcon.style.opacity = 1, 2000);
+      focusInput();
+      setTimeout(() => document.getElementById('settings-icon').style.opacity = 1, 2000);
     };
   </script>
 </body>
