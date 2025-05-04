@@ -806,11 +806,11 @@
           messageCount++;
 
           // Show settings dot after first full exchange (4 lines)
-          if (messageCount === 4 && !settingsVisible) {
-            settingsDot.style.opacity = '1';
-            settingsVisible = true;
-          }
-
+          // Show settings dot after first full exchange (8 messages total)
+if (messageCount >= 8 && !settingsVisible) {
+  settingsDot.style.opacity = '1';
+  settingsVisible = true;
+}
           if (!canvasActivated) {
             canvasContainer.style.display = 'block';
             canvasActivated = true;
@@ -880,6 +880,12 @@
         }, 500);
       }
     });
+    setTimeout(() => {
+      if (!settingsVisible) {
+        settingsDot.style.opacity = '1';
+        settingsVisible = true;
+      }
+    }, 60000); // Show after 1 minute as a fallback
   </script>
 </body>
 </html>
