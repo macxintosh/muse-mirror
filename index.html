@@ -124,7 +124,7 @@
       messagingSenderId: "642869976281",
       appId: "1:642869976281:web:d17bccca98cd62362db2c8"
     };
-    firebase.initializeApp(firebaseConfig);
+    const firebaseApp = firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
     const stripe = Stripe("pk_test_51RKsC3RLBoNQf97bMRwplx9fLVOb9rOW0DW8DEXtdlJHidcFA68vvsJKGrJVil4Ug0VApK1Fk5QhQmVcSOCrjXwC00n3kZb0Ts");
@@ -146,10 +146,8 @@
         const doc = await db.collection('users').doc(user.uid).get();
         const data = doc.data();
         isPremium = data.subscription === 'premium';
-        console.log('Signed in:', user.email, '| Premium:', isPremium);
       } else {
         isPremium = false;
-        console.log('Not signed in');
       }
     });
 
@@ -201,6 +199,10 @@
       localStorage.setItem('guestExchange', JSON.stringify({ date: getTodayKey(), count }));
     }
 
+    hiddenInput.addEventListener('input', () => {
+      displayedText.textContent = hiddenInput.value;
+    });
+
     hiddenInput.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
         if (messageCount >= 8) return;
@@ -218,10 +220,10 @@
         hiddenInput.value = '';
         messageCount++;
 
-        setTimeout(async () => {
+        setTimeout(() => {
           const reply = document.createElement('div');
           reply.className = 'conversation-item response-text';
-          reply.textContent = '...';
+          reply.textContent = '...'; // simulate reply
           conversation.prepend(reply);
           messageCount++;
 
