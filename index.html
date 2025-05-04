@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Muse Mirror</title>
+  <!-- Firebase SDK -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+  <!-- Stripe JS -->
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
     @import url('https://fonts.cdnjs.com/css2?family=Inter:wght@300;400&display=swap');
 
@@ -141,6 +147,196 @@
     .canvas-visible {
       opacity: 1 !important;
     }
+
+    /* Settings UI */
+    #settings-dot {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 4px;
+      height: 4px;
+      background-color: #333;
+      border-radius: 50%;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.5s ease, transform 0.3s ease;
+    }
+
+    #settings-dot:hover {
+      transform: scale(1.5);
+    }
+
+    #settings-panel {
+      position: absolute;
+      top: 40px;
+      right: 20px;
+      width: 280px;
+      background-color: white;
+      border: 1px solid #eee;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 100;
+    }
+
+    .settings-visible {
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+
+    .settings-heading {
+      font-size: 16px;
+      font-weight: 400;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .settings-input {
+      width: 100%;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .settings-input:focus {
+      border-color: #ccc;
+    }
+
+    .settings-button {
+      width: 100%;
+      padding: 8px 0;
+      margin: 5px 0;
+      background-color: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: #333;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .settings-button:hover {
+      background-color: #f9f9f9;
+    }
+
+    .settings-button.primary {
+      background-color: #f0f0f0;
+      border-color: #ddd;
+    }
+
+    .settings-button.primary:hover {
+      background-color: #e8e8e8;
+    }
+
+    .settings-divider {
+      height: 1px;
+      background-color: #eee;
+      margin: 15px 0;
+    }
+
+    .plan-option {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      margin-bottom: 8px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .plan-option:hover, .plan-option.selected {
+      background-color: #f9f9f9;
+    }
+
+    .plan-option.selected {
+      border-color: #ddd;
+    }
+
+    .plan-name {
+      font-size: 14px;
+    }
+
+    .plan-price {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .plan-description {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .eth-note {
+      font-size: 12px;
+      color: #888;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+
+    .auth-toggle {
+      font-size: 13px;
+      color: #888;
+      text-align: center;
+      margin-top: 12px;
+      cursor: pointer;
+    }
+
+    .auth-toggle:hover {
+      color: #666;
+    }
+
+    .auth-status {
+      font-size: 13px;
+      color: #888;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .usage-info {
+      font-size: 13px;
+      color: #888;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .limit-message {
+      position: absolute;
+      left: 50%;
+      top: 40%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+      color: #888;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .logout-button {
+      font-size: 13px;
+      color: #888;
+      text-align: center;
+      margin-top: 15px;
+      cursor: pointer;
+      padding: 5px;
+    }
+
+    .logout-button:hover {
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -152,12 +348,89 @@
       <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
     </div>
   </div>
+  
   <div id="canvas-container">
     <canvas id="drawing-canvas"></canvas>
     <div id="canvas-gradient"></div>
   </div>
 
+  <div id="settings-dot"></div>
+  
+  <div id="settings-panel">
+    <div id="auth-panel">
+      <div id="login-form">
+        <div class="settings-heading">Sign in</div>
+        <input type="email" id="email-input" class="settings-input" placeholder="Email" />
+        <input type="password" id="password-input" class="settings-input" placeholder="Password" />
+        <button id="login-button" class="settings-button primary">Sign in</button>
+        <div class="settings-divider"></div>
+        <div class="settings-heading">Choose your plan</div>
+        <div id="free-plan" class="plan-option selected">
+          <div>
+            <div class="plan-name">Free</div>
+            <div class="plan-description">4 exchanges per day</div>
+          </div>
+          <div class="plan-price">$0</div>
+        </div>
+        <div id="premium-plan" class="plan-option">
+          <div>
+            <div class="plan-name">Lifetime</div>
+            <div class="plan-description">Unlimited exchanges</div>
+          </div>
+          <div class="plan-price">$5</div>
+        </div>
+        <div class="eth-note">80% keeps the lights on, 20% funds AI safety and ethics research.</div>
+        <button id="subscribe-button" class="settings-button">Subscribe</button>
+        <div class="auth-toggle" id="switch-to-signup">Need an account? Sign up</div>
+      </div>
+      
+      <div id="signup-form" style="display: none;">
+        <div class="settings-heading">Create account</div>
+        <input type="email" id="signup-email" class="settings-input" placeholder="Email" />
+        <input type="password" id="signup-password" class="settings-input" placeholder="Password" />
+        <button id="signup-button" class="settings-button primary">Sign up</button>
+        <div class="auth-toggle" id="switch-to-login">Already have an account? Sign in</div>
+      </div>
+      
+      <div id="user-panel" style="display: none;">
+        <div class="settings-heading">Your account</div>
+        <div class="auth-status" id="user-email"></div>
+        <div class="usage-info" id="usage-status"></div>
+        <div class="settings-divider"></div>
+        <div class="settings-heading">Subscription</div>
+        <div id="subscription-status" class="auth-status"></div>
+        <button id="manage-subscription" class="settings-button">Manage subscription</button>
+        <div class="logout-button" id="logout-button">Sign out</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="limit-message" class="limit-message">
+    that's all the light I've got for now
+  </div>
+
   <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBalUFW0wm0qWnZ_l1Fd0sECpaKav3YjaE",
+      authDomain: "muse-mirror-bfc94.firebaseapp.com",
+      projectId: "muse-mirror-bfc94",
+      storageBucket: "muse-mirror-bfc94.firebasestorage.app",
+      messagingSenderId: "642869976281",
+      appId: "1:642869976281:web:d17bcca98cd62362db2c8",
+      measurementId: "G-J2D0SFEPPK"
+    };
+
+    let firebaseApp, auth, db, stripe;
+    
+    // Initialize Firebase and Stripe only if config is set
+    if (firebaseConfig.apiKey) {
+      firebaseApp = firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      db = firebase.firestore();
+      stripe = Stripe('pk_test_51RKsC3RLBoNQf97bMRwplx9fLVOb9rOW0DW8DEXtdlJHidcFA68vvsJKGrJVil4Ug0VApK1Fk5QhQmVcSOCrjXwC00n3kZb0Ts'); // Your Stripe publishable key
+    }
+
     const hiddenInput = document.getElementById('hidden-input');
     const displayedText = document.getElementById('displayed-text');
     const conversation = document.getElementById('conversation');
@@ -165,19 +438,28 @@
     const canvasContainer = document.getElementById('canvas-container');
     const canvas = document.getElementById('drawing-canvas');
     const ctx = canvas.getContext('2d');
+    const settingsDot = document.getElementById('settings-dot');
+    const settingsPanel = document.getElementById('settings-panel');
+    const limitMessage = document.getElementById('limit-message');
 
     let isDrawing = false;
     let lastX = 0;
     let lastY = 0;
     let canvasActivated = false;
     let messageCount = 0;
+    let isSettingsOpen = false;
+    let currentUser = null;
+    let userExchangeCount = 0;
+    let isPremium = false;
+    let dailyLimit = 4;
+    let settingsVisible = false;
 
     const fallbackResponses = [
       "My reflections are caught somewhere between worlds. Try again soon."
     ];
 
     function focusInput() {
-      if (messageCount < 8) hiddenInput.focus();
+      if (messageCount < 8 && !isSettingsOpen) hiddenInput.focus();
     }
 
     function setupCanvas() {
@@ -215,6 +497,253 @@
     function stopDrawing() {
       isDrawing = false;
     }
+    
+    function toggleSettings() {
+      isSettingsOpen = !isSettingsOpen;
+      if (isSettingsOpen) {
+        settingsPanel.classList.add('settings-visible');
+      } else {
+        settingsPanel.classList.remove('settings-visible');
+        focusInput();
+      }
+    }
+
+    function showLimitMessage() {
+      limitMessage.style.opacity = '1';
+      setTimeout(() => {
+        limitMessage.style.opacity = '0';
+      }, 5000);
+    }
+
+    function updateUsageUI() {
+      const usageStatus = document.getElementById('usage-status');
+      const subscriptionStatus = document.getElementById('subscription-status');
+      
+      if (isPremium) {
+        usageStatus.textContent = 'Unlimited exchanges';
+        subscriptionStatus.textContent = 'Lifetime subscriber';
+      } else {
+        usageStatus.textContent = `${userExchangeCount} of ${dailyLimit} exchanges used today`;
+        subscriptionStatus.textContent = 'Free plan';
+      }
+    }
+
+    function checkExchangeLimit() {
+      // For free users, check if they've reached their limit
+      if (!isPremium && userExchangeCount >= dailyLimit) {
+        showLimitMessage();
+        return true;
+      }
+      return false;
+    }
+
+    function updateUserData() {
+      if (!auth || !currentUser) return;
+      
+      // Get the current date for tracking daily exchanges
+      const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      
+      db.collection('users').doc(currentUser.uid).get().then((doc) => {
+        if (doc.exists) {
+          const userData = doc.data();
+          isPremium = userData.premium || false;
+          
+          // Check if we need to reset daily count (new day)
+          if (userData.lastExchangeDate !== today) {
+            userExchangeCount = 0;
+          } else {
+            userExchangeCount = userData.dailyExchanges || 0;
+          }
+          
+          updateUsageUI();
+        } else {
+          // Create new user document if it doesn't exist
+          db.collection('users').doc(currentUser.uid).set({
+            email: currentUser.email,
+            premium: false,
+            dailyExchanges: 0,
+            lastExchangeDate: today
+          });
+          isPremium = false;
+          userExchangeCount = 0;
+          updateUsageUI();
+        }
+      }).catch((error) => {
+        console.error("Error getting user data:", error);
+      });
+    }
+
+    function incrementUserExchangeCount() {
+      if (!auth || !currentUser) return;
+      
+      const today = new Date().toISOString().split('T')[0];
+      userExchangeCount++;
+      
+      db.collection('users').doc(currentUser.uid).update({
+        dailyExchanges: userExchangeCount,
+        lastExchangeDate: today
+      }).catch((error) => {
+        console.error("Error updating exchange count:", error);
+      });
+      
+      updateUsageUI();
+    }
+
+    function setupAuthListeners() {
+      if (!auth) return;
+      
+      // Auth state change listener
+      auth.onAuthStateChanged((user) => {
+        currentUser = user;
+        
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const userPanel = document.getElementById('user-panel');
+        
+        if (user) {
+          // User is signed in
+          loginForm.style.display = 'none';
+          signupForm.style.display = 'none';
+          userPanel.style.display = 'block';
+          
+          document.getElementById('user-email').textContent = user.email;
+          updateUserData();
+        } else {
+          // No user is signed in
+          loginForm.style.display = 'block';
+          signupForm.style.display = 'none';
+          userPanel.style.display = 'none';
+        }
+      });
+    }
+
+    function setupPlanSelection() {
+      const freePlan = document.getElementById('free-plan');
+      const premiumPlan = document.getElementById('premium-plan');
+      
+      freePlan.addEventListener('click', () => {
+        freePlan.classList.add('selected');
+        premiumPlan.classList.remove('selected');
+      });
+      
+      premiumPlan.addEventListener('click', () => {
+        premiumPlan.classList.add('selected');
+        freePlan.classList.remove('selected');
+      });
+    }
+
+    function handleSubscription() {
+      if (!auth || !currentUser) {
+        // User needs to be logged in
+        document.getElementById('switch-to-login').click();
+        return;
+      }
+      
+      const isPremiumSelected = document.getElementById('premium-plan').classList.contains('selected');
+      
+      if (isPremiumSelected) {
+        // Create checkout session
+        fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: currentUser.uid,
+            email: currentUser.email
+          }),
+        })
+        .then(response => response.json())
+        .then(session => {
+          // Redirect to Stripe Checkout
+          return stripe.redirectToCheckout({ sessionId: session.id });
+        })
+        .catch(error => {
+          console.error('Error creating checkout session:', error);
+        });
+      } else {
+        // Free plan selected, just close the panel
+        toggleSettings();
+      }
+    }
+
+    // Set up event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Auth UI event listeners
+      document.getElementById('login-button').addEventListener('click', () => {
+        const email = document.getElementById('email-input').value;
+        const password = document.getElementById('password-input').value;
+        
+        if (auth) {
+          auth.signInWithEmailAndPassword(email, password)
+            .then(() => {
+              toggleSettings(); // Close panel after successful login
+            })
+            .catch((error) => {
+              alert('Login failed: ' + error.message);
+            });
+        } else {
+          alert('Firebase not initialized. Check your configuration.');
+        }
+      });
+      
+      document.getElementById('signup-button').addEventListener('click', () => {
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        
+        if (auth) {
+          auth.createUserWithEmailAndPassword(email, password)
+            .then(() => {
+              toggleSettings(); // Close panel after successful signup
+            })
+            .catch((error) => {
+              alert('Signup failed: ' + error.message);
+            });
+        } else {
+          alert('Firebase not initialized. Check your configuration.');
+        }
+      });
+      
+      document.getElementById('logout-button').addEventListener('click', () => {
+        if (auth) {
+          auth.signOut().then(() => {
+            toggleSettings(); // Close panel after logout
+          });
+        }
+      });
+      
+      document.getElementById('subscribe-button').addEventListener('click', handleSubscription);
+      
+      document.getElementById('switch-to-signup').addEventListener('click', () => {
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('signup-form').style.display = 'block';
+      });
+      
+      document.getElementById('switch-to-login').addEventListener('click', () => {
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('signup-form').style.display = 'none';
+      });
+      
+      document.getElementById('manage-subscription').addEventListener('click', () => {
+        // Redirect to customer portal or subscription management page
+        fetch('/api/create-customer-portal-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: currentUser.uid
+          }),
+        })
+        .then(response => response.json())
+        .then(data => {
+          window.location.href = data.url;
+        });
+      });
+      
+      setupPlanSelection();
+      setupAuthListeners();
+    });
 
     window.onload = function () {
       focusInput();
@@ -223,10 +752,25 @@
           setupCanvas();
         }
       });
+      
+      // Close settings panel when clicking outside
+      document.addEventListener('click', (e) => {
+        if (isSettingsOpen && 
+            !settingsPanel.contains(e.target) && 
+            e.target !== settingsDot) {
+          toggleSettings();
+        }
+      });
     };
 
+    // Settings dot click handler
+    settingsDot.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleSettings();
+    });
+
     document.addEventListener('click', (e) => {
-      if (e.target !== canvas) focusInput();
+      if (e.target !== canvas && !isSettingsOpen) focusInput();
     });
 
     document.getElementById('input-line').addEventListener('click', focusInput);
@@ -239,6 +783,13 @@
       if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
         e.preventDefault();
         if (messageCount >= 8) return;
+        
+        // Check exchange limit for free users
+        if (checkExchangeLimit()) {
+          hiddenInput.value = '';
+          displayedText.textContent = '';
+          return;
+        }
 
         const userText = hiddenInput.value.trim();
         displayedText.classList.add('smooth-transition');
@@ -253,6 +804,12 @@
           displayedText.style.opacity = '1';
           conversation.prepend(userItem);
           messageCount++;
+
+          // Show settings dot after first full exchange (4 lines)
+          if (messageCount === 4 && !settingsVisible) {
+            settingsDot.style.opacity = '1';
+            settingsVisible = true;
+          }
 
           if (!canvasActivated) {
             canvasContainer.style.display = 'block';
@@ -300,6 +857,11 @@
             responseItem.textContent = responseText;
             conversation.prepend(responseItem);
             messageCount++;
+            
+            // Increment the user's exchange count in Firebase
+            if (currentUser) {
+              incrementUserExchangeCount();
+            }
 
             if (messageCount >= 8) {
               setTimeout(() => {
