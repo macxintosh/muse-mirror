@@ -765,23 +765,37 @@ if (firebaseConfig.apiKey) {
         document.getElementById('signup-form').style.display = 'none';
       });
       
-      document.getElementById('manage-subscription').addEventListener('click', () => {
-        event.preventDefault(); // explicitly stop page reload
-        // Redirect to customer portal or subscription management page
-        fetch('/api/create-customer-portal-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: currentUser.uid
-          }),
-        })
-        .then(response => response.json())
-        .then(data => {
-          window.location.href = data.url;
-        });
-      });
+      document.getElementById('manage-subscription').addEventListener('click', (event) => {
+  event.preventDefault(); // explicitly stops the page reload
+  
+  if (!currentUser || !currentUser.uid) {
+    alert('User not logged in or UID missing!');
+    return;
+  }
+
+  fetch('/api/create-customer-portal-session', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      userId: currentUser.uid
+    }),
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      console.error('Error:', data);
+      alert('Error: ' + (data.error || 'Unknown error'));
+    }
+  })
+  .catch(err => {
+    console.error('Fetch error:', err);
+    alert('Fetch error. Check console.');
+  });
+});
       
       setupPlanSelection();
       setupAuthListeners();
