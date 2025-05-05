@@ -927,6 +927,14 @@ if (messageCount >= 8 && !settingsVisible) {
         settingsVisible = true;
       }
     }, 60000); // Show after 1 minute as a fallback
+
+    firebase.firestore().collection("testCollection").get()
+  .then((snapshot) => {
+    console.log("✅ SUCCESSFUL CONNECTION TO FIRESTORE:", snapshot.docs.length);
+  })
+  .catch((error) => {
+    console.error("🚩 SIMPLE TEST ERROR:", error);
+  });
   </script>
 </body>
 </html>
