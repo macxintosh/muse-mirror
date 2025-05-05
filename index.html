@@ -766,6 +766,7 @@ if (firebaseConfig.apiKey) {
       });
       
       document.getElementById('manage-subscription').addEventListener('click', () => {
+        event.preventDefault(); // explicitly stop page reload
         // Redirect to customer portal or subscription management page
         fetch('/api/create-customer-portal-session', {
           method: 'POST',
