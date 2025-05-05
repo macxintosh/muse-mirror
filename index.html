@@ -413,23 +413,43 @@
     // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBalUFW0wm0qWnZ_LlFd0sECpaKav3YjaE",
-      authDomain: "muse-mirror-bfc94.firebaseapp.com",
-      projectId: "muse-mirror-bfc94",
-      storageBucket: "muse-mirror-bfc94.firebasestorage.app",
-      messagingSenderId: "642869976281",
-      appId: "1:642869976281:web:d17bcca98cd62362db2c8",
-      measurementId: "G-J2D0SFEPPK"
+  authDomain: "muse-mirror-bfc94.firebaseapp.com",
+  projectId: "muse-mirror-bfc94",
+  storageBucket: "muse-mirror-bfc94.firebasestorage.app",
+  messagingSenderId: "642869976281",
+  appId: "1:642869976281:web:d17bccca98cd62362db2c8",
+  measurementId: "G-J2D0SFEPPK"
     };
 
     let firebaseApp, auth, db, stripe;
     
     // Initialize Firebase and Stripe only if config is set
-    if (firebaseConfig.apiKey) {
+  // Initialize Firebase and Stripe only if config is set
+if (firebaseConfig.apiKey) {
+  try {
+    // Check if Firebase is already initialized
+    if (!firebase.apps.length) {
       firebaseApp = firebase.initializeApp(firebaseConfig);
-      auth = firebase.auth();
-      db = firebase.firestore();
-      stripe = Stripe('pk_test_51RKsC3RLBoNQf97bMRwplx9fLVOb9rOW0DW8DEXtdlJHidcFA68vvsJKGrJVil4Ug0VApK1Fk5QhQmVcSOCrjXwC00n3kZb0Ts'); // Your Stripe publishable key
+    } else {
+      firebaseApp = firebase.app(); // Use existing instance if already initialized
     }
+    auth = firebase.auth();
+    db = firebase.firestore();
+    
+    // Important: Add these settings to fix CORS issues
+    db.settings({
+      ignoreUndefinedProperties: true,
+      experimentalForceLongPolling: true, // This helps with CORS issues
+      useFetchStreams: false // Disable fetch streams which can cause CORS problems
+    });
+    
+    stripe = Stripe('pk_test_51RKsC3RLBoNQf97bMRwplx9fLVOb9rOW0DW8DEXtdlJHidcFA68vvsJKGrJVil4Ug0VApK1Fk5QhQmVcSOCrjXwC00n3kZb0Ts');
+    
+    console.log("Firebase Firestore initialized successfully");
+  } catch (error) {
+    console.error("Firebase initialization error:", error);
+  }
+}
 
     const hiddenInput = document.getElementById('hidden-input');
     const displayedText = document.getElementById('displayed-text');
