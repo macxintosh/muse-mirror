@@ -610,6 +610,9 @@
       settingsDot.style.opacity = '1';
       settingsVisible = true;
       
+      // Store that this user has seen the settings dot
+      localStorage.setItem('settingsDotShown', 'true');
+      
       document.getElementById('user-email').textContent = user.email;
       updateUserData();
     } else {
@@ -618,10 +621,16 @@
       signupForm.style.display = 'none';
       userPanel.style.display = 'none';
       
-      // Only hide settings dot if we're using message count logic
-      // If you want it to always be visible regardless of sign-in status,
-      // remove these two lines
-      if (messageCount < 8) {
+      // Check if settings dot has been shown before
+      const dotShownBefore = localStorage.getItem('settingsDotShown') === 'true';
+      
+      if (dotShownBefore) {
+        // If it's been shown before, keep it visible
+        settingsDot.style.opacity = '1';
+        settingsVisible = true;
+      } else if (messageCount < 8) {
+        // For new users who haven't had enough messages,
+        // keep it hidden until they reach the threshold
         settingsDot.style.opacity = '0';
         settingsVisible = false;
       }
