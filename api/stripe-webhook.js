@@ -1,4 +1,4 @@
-// api/stripe-webhook.js - Robust subscription webhook handling (corrected)
+// api/stripe-webhook.js - Robust subscription webhook handling (updated and refined)
 
 const Stripe = require('stripe');
 const { buffer } = require('micro');
@@ -51,9 +51,14 @@ module.exports = async function handler(req, res) {
   }
 
   switch (event.type) {
-    case 'checkout.session.completed':
+    case 'checkout.session.completed': {
       const session = event.data.object;
-      const userIdCheckout = session.metadata.userId;
+      const userIdCheckout = session.metadata?.userId;
+
+      if (!userIdCheckout) {
+        console.error('❌ No userId in session metadata');
+        break;
+      }
 
       await usersRef.doc(userIdCheckout).update({
         premium: true,
@@ -64,32 +69,42 @@ module.exports = async function handler(req, res) {
 
       console.log(`✅ User ${userIdCheckout} upgraded to premium (checkout)`);
       break;
+    }
 
     case 'customer.subscription.created':
-    case 'customer.subscription.updated':
+    case 'customer.subscription.updated': {
       const subscription = event.data.object;
+      const isPremium = subscription.status === 'active';
+
       await updatePremiumStatus(
         subscription.customer,
-        subscription.status === 'active',
+        isPremium,
         subscription.status
       );
-      break;
 
-    case 'customer.subscription.deleted':
+      break;
+    }
+
+    case 'customer.subscription.deleted': {
       const canceledSubscription = event.data.object;
+
       await updatePremiumStatus(
         canceledSubscription.customer,
         false,
         'canceled'
       );
-      break;
 
-    case 'customer.updated':
-      console.log('Customer details updated:', event.data.object);
       break;
+    }
+
+    case 'customer.updated': {
+      const customer = event.data.object;
+      console.log('Customer details updated:', customer.id);
+      break;
+    }
 
     default:
-      console.log(`Unhandled event type: ${event.type}`);
+      console.warn(`Unhandled event type: ${event.type}`);
   }
 
   res.status(200).json({ received: true });
