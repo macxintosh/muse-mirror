@@ -11,7 +11,7 @@
   <!-- Stripe JS -->
   <script src="https://js.stripe.com/v3/"></script>
   <style>
-    @import url('https://fonts.cdnjs.com/css2?family=Inter:wght@300;400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap');
 
     * {
       margin: 0;
@@ -738,6 +738,10 @@ if (firebaseConfig.apiKey) {
         .then(response => response.json())
         .then(session => {
           hideLoading();
+          if (!session.id) {
+            alert('Failed to start checkout: No session ID returned. Please try again or contact support.');
+            return;
+          }
           return stripe.redirectToCheckout({ sessionId: session.id });
         })
         .catch(error => {

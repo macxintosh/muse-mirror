@@ -42,11 +42,11 @@ module.exports = async function handler(req, res) {
 
     // Update user document to track checkout session
     const { db } = getFirebaseAdmin();
-    await db.collection('users').doc(userId).update({
+    await db.collection('users').doc(userId).set({
       lastCheckoutSession: session.id,
       checkoutStatus: 'pending',
       checkoutDate: new Date().toISOString()
-    });
+    }, { merge: true });
 
     res.status(200).json({ id: session.id });
   } catch (error) {
