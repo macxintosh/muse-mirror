@@ -798,6 +798,9 @@ if (firebaseConfig.apiKey) {
           showLoading();
           auth.signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
+              if (!userCredential || !userCredential.user) {
+                throw new Error('No user returned from signInWithEmailAndPassword');
+              }
               const user = userCredential.user;
               if (!user.emailVerified) {
                 auth.signOut();
@@ -806,7 +809,8 @@ if (firebaseConfig.apiKey) {
                 document.getElementById('verify-email-message').style.display = 'block';
                 document.getElementById('verify-email-message').scrollIntoView();
                 document.getElementById('resend-verification').onclick = resendVerificationEmail;
-                return;
+                // Return a resolved Promise to stop the chain
+                return Promise.resolve();
               }
               // Update last login time
               return db.collection('users').doc(user.uid).update({
@@ -818,7 +822,7 @@ if (firebaseConfig.apiKey) {
             })
             .catch((error) => {
               console.error('Login error:', error);
-              alert('Login failed: ' + error.message);
+              alert('Login failed: ' + (error && error.message ? error.message : error));
               hideLoading();
             });
         } else {
