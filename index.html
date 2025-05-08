@@ -1184,6 +1184,14 @@ if (messageCount >= 8 && !settingsVisible) {
     console.log('Settings icon clicked'); // Debug log
     toggleSettings();
   };
+
+  // Force settings icon to always be visible for debugging
+  settingsDot.style.display = 'block';
+  settingsDot.style.opacity = '1';
+  settingsDot.style.position = 'fixed';
+  settingsDot.style.top = '20px';
+  settingsDot.style.right = '20px';
+  settingsDot.style.zIndex = '9999';
   </script>
 </body>
 </html>
