@@ -52,7 +52,7 @@ module.exports = async function handler(req, res) {
         updateData.checkoutStatus = 'completed';
       }
 
-      await usersRef.doc(doc.id).update(updateData);
+      await usersRef.doc(doc.id).set(updateData, { merge: true });
       console.log(`✅ User ${doc.id} premium status updated: ${isPremium}, status: ${status}`);
     });
   }
@@ -76,7 +76,7 @@ module.exports = async function handler(req, res) {
         premiumSince: new Date().toISOString()
       };
 
-      await usersRef.doc(userIdCheckout).update(updateData);
+      await usersRef.doc(userIdCheckout).set(updateData, { merge: true });
       console.log(`✅ User ${userIdCheckout} upgraded to premium (checkout)`);
       break;
     }
@@ -86,11 +86,11 @@ module.exports = async function handler(req, res) {
       const userId = paymentIntent.metadata?.userId;
 
       if (userId) {
-        await usersRef.doc(userId).update({
+        await usersRef.doc(userId).set({
           paymentStatus: 'succeeded',
           paymentDate: new Date().toISOString(),
           lastPaymentIntent: paymentIntent.id
-        });
+        }, { merge: true });
         console.log(`✅ Payment succeeded for user ${userId}`);
       }
       break;
@@ -101,11 +101,11 @@ module.exports = async function handler(req, res) {
       const userId = paymentIntent.metadata?.userId;
 
       if (userId) {
-        await usersRef.doc(userId).update({
+        await usersRef.doc(userId).set({
           paymentStatus: 'failed',
           paymentError: paymentIntent.last_payment_error?.message || 'Unknown error',
           lastPaymentIntent: paymentIntent.id
-        });
+        }, { merge: true });
         console.log(`❌ Payment failed for user ${userId}`);
       }
       break;
