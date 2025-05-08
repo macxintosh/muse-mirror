@@ -1171,7 +1171,15 @@ if (messageCount >= 8 && !settingsVisible) {
   settingsDot.style.cursor = 'pointer';
   settingsDot.style.transition = 'opacity 0.5s ease';
   settingsDot.style.zIndex = '101';
+  settingsDot.style.pointerEvents = 'auto';
   settingsDot.innerHTML = '<div style="width:6px;height:6px;background:#bbb;border-radius:50%;"></div>';
+
+  // Re-attach event listener after setting innerHTML
+  settingsDot.onclick = function(e) {
+    e.stopPropagation();
+    console.log('Settings icon clicked'); // Debug log
+    toggleSettings();
+  };
   </script>
 </body>
 </html>
