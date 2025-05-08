@@ -28,9 +28,9 @@ module.exports = async function handler(req, res) {
 
     // Store the Stripe customer ID in Firestore
     const { db } = getFirebaseAdmin();
-    await db.collection('users').doc(userId).update({
+    await db.collection('users').doc(userId).set({
       stripeCustomerId: customer.id
-    });
+    }, { merge: true });
 
     res.status(200).json({ stripeCustomerId: customer.id });
   } catch (error) {
