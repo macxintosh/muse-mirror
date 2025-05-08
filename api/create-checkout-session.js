@@ -35,8 +35,24 @@ module.exports = async function handler(req, res) {
       cancel_url: `${req.headers.origin}/`,
       customer_email: email,
       metadata: {
-        userId: userId
+        userId: userId,
+        productType: 'lifetime',
+        purchaseDate: new Date().toISOString()
+      },
+      payment_intent_data: {
+        metadata: {
+          userId: userId,
+          productType: 'lifetime'
+        }
       }
+    });
+
+    // Update user document to track checkout session
+    const { db } = getFirebaseAdmin();
+    await db.collection('users').doc(userId).update({
+      lastCheckoutSession: session.id,
+      checkoutStatus: 'pending',
+      checkoutDate: new Date().toISOString()
     });
 
     res.status(200).json({ id: session.id });

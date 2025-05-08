@@ -40,12 +40,19 @@ module.exports = async function handler(req, res) {
     }
 
     snapshot.forEach(async (doc) => {
-      await usersRef.doc(doc.id).update({
+      const updateData = {
         premium: isPremium,
         subscriptionStatus: status,
         subscriptionUpdated: new Date().toISOString(),
-      });
+      };
 
+      // If this is a new premium status, add additional fields
+      if (isPremium) {
+        updateData.premiumSince = new Date().toISOString();
+        updateData.checkoutStatus = 'completed';
+      }
+
+      await usersRef.doc(doc.id).update(updateData);
       console.log(`✅ User ${doc.id} premium status updated: ${isPremium}, status: ${status}`);
     });
   }
@@ -60,14 +67,47 @@ module.exports = async function handler(req, res) {
         break;
       }
 
-      await usersRef.doc(userIdCheckout).update({
+      const updateData = {
         premium: true,
         paymentDate: new Date().toISOString(),
         stripeCustomerId: session.customer,
         subscriptionStatus: 'active',
-      });
+        checkoutStatus: 'completed',
+        premiumSince: new Date().toISOString()
+      };
 
+      await usersRef.doc(userIdCheckout).update(updateData);
       console.log(`✅ User ${userIdCheckout} upgraded to premium (checkout)`);
+      break;
+    }
+
+    case 'payment_intent.succeeded': {
+      const paymentIntent = event.data.object;
+      const userId = paymentIntent.metadata?.userId;
+
+      if (userId) {
+        await usersRef.doc(userId).update({
+          paymentStatus: 'succeeded',
+          paymentDate: new Date().toISOString(),
+          lastPaymentIntent: paymentIntent.id
+        });
+        console.log(`✅ Payment succeeded for user ${userId}`);
+      }
+      break;
+    }
+
+    case 'payment_intent.payment_failed': {
+      const paymentIntent = event.data.object;
+      const userId = paymentIntent.metadata?.userId;
+
+      if (userId) {
+        await usersRef.doc(userId).update({
+          paymentStatus: 'failed',
+          paymentError: paymentIntent.last_payment_error?.message || 'Unknown error',
+          lastPaymentIntent: paymentIntent.id
+        });
+        console.log(`❌ Payment failed for user ${userId}`);
+      }
       break;
     }
 

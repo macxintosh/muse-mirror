@@ -717,10 +717,18 @@ if (firebaseConfig.apiKey) {
         
         if (auth) {
           auth.signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+              // Update last login time
+              const user = userCredential.user;
+              return db.collection('users').doc(user.uid).update({
+                lastLogin: new Date().toISOString()
+              });
+            })
             .then(() => {
               toggleSettings(); // Close panel after successful login
             })
             .catch((error) => {
+              console.error('Login error:', error);
               alert('Login failed: ' + error.message);
             });
         } else {
@@ -734,10 +742,24 @@ if (firebaseConfig.apiKey) {
         
         if (auth) {
           auth.createUserWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+              // Create user document in Firestore
+              const user = userCredential.user;
+              const today = new Date().toISOString().split('T')[0];
+              
+              return db.collection('users').doc(user.uid).set({
+                email: user.email,
+                premium: false,
+                dailyExchanges: 0,
+                lastExchangeDate: today,
+                createdAt: new Date().toISOString()
+              });
+            })
             .then(() => {
               toggleSettings(); // Close panel after successful signup
             })
             .catch((error) => {
+              console.error('Signup error:', error);
               alert('Signup failed: ' + error.message);
             });
         } else {
