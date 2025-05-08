@@ -14,6 +14,22 @@ module.exports = async function handler(req, res) {
     // Initialize Stripe
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     
+    // Get the user document
+    const { db } = getFirebaseAdmin();
+    const userDoc = await db.collection('users').doc(userId).get();
+    let userData = userDoc.data();
+    let stripeCustomerId = userData?.stripeCustomerId;
+
+    // If no Stripe customer ID, create one and save it
+    if (!stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        email,
+        metadata: { userId }
+      });
+      stripeCustomerId = customer.id;
+      await db.collection('users').doc(userId).set({ stripeCustomerId }, { merge: true });
+    }
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -26,6 +42,7 @@ module.exports = async function handler(req, res) {
       mode: 'subscription',
       success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin}/`,
+      customer: stripeCustomerId, // Always use the user's Stripe customer
       customer_email: email,
       metadata: {
         userId: userId,
@@ -35,7 +52,6 @@ module.exports = async function handler(req, res) {
     });
 
     // Update user document to track checkout session
-    const { db } = getFirebaseAdmin();
     await db.collection('users').doc(userId).set({
       lastCheckoutSession: session.id,
       checkoutStatus: 'pending',
