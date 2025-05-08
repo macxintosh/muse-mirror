@@ -337,6 +337,8 @@
     .logout-button:hover {
       color: #666;
     }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -380,7 +382,7 @@
           <div class="plan-price">$5</div>
         </div>
         <div class="eth-note">80% keeps the lights on, 20% funds AI safety and ethics research.</div>
-        <button id="subscribe-button" class="settings-button">Subscribe</button>
+        <button class="settings-button subscribe-button">Subscribe</button>
         <div class="auth-toggle" id="switch-to-signup">Need an account? Sign up</div>
       </div>
       
@@ -399,7 +401,21 @@
         <div class="settings-divider"></div>
         <div class="settings-heading">Subscription</div>
         <div id="subscription-status" class="auth-status"></div>
-        <button id="subscribe-button" class="settings-button">Subscribe</button>
+        <div id="user-free-plan" class="plan-option selected">
+          <div>
+            <div class="plan-name">Free</div>
+            <div class="plan-description">4 exchanges per day</div>
+          </div>
+          <div class="plan-price">$0</div>
+        </div>
+        <div id="user-premium-plan" class="plan-option">
+          <div>
+            <div class="plan-name">Lifetime</div>
+            <div class="plan-description">Unlimited exchanges</div>
+          </div>
+          <div class="plan-price">$5</div>
+        </div>
+        <button class="settings-button subscribe-button">Subscribe</button>
         <button id="manage-subscription" class="settings-button">Manage subscription</button>
         <div class="logout-button" id="logout-button">Sign out</div>
       </div>
@@ -409,6 +425,14 @@
   <div id="limit-message" class="limit-message">
     that's all the light I've got for now
   </div>
+
+  <div id="loading-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(255,255,255,0.6);z-index:999;align-items:center;justify-content:center;transition:opacity 0.2s;">
+    <div style="width:36px;height:36px;border:3px solid #ddd;border-top:3px solid #333;border-radius:50%;animation:spin 1s linear infinite;"></div>
+  </div>
+
+  <div id="processing-message" style="display:none;position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #eee;padding:12px 24px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.04);font-size:15px;color:#333;z-index:1001;">Your upgrade is processing. Please refresh in a moment.</div>
+
+  <div id="verify-email-message" style="display:none;color:#b00;font-size:14px;text-align:center;margin:10px 0;">Please verify your email to upgrade.</div>
 
   <script>
     // Initialize Firebase
@@ -539,18 +563,18 @@ if (firebaseConfig.apiKey) {
     function updateUsageUI() {
       const usageStatus = document.getElementById('usage-status');
       const subscriptionStatus = document.getElementById('subscription-status');
-      const subscribeButton = document.getElementById('subscribe-button');
+      const subscribeButtons = document.querySelectorAll('.subscribe-button');
       const manageSubscriptionButton = document.getElementById('manage-subscription');
       
       if (isPremium) {
         usageStatus.textContent = 'Unlimited exchanges';
         subscriptionStatus.textContent = 'Lifetime subscriber';
-        if (subscribeButton) subscribeButton.style.display = 'none';
+        if (subscribeButtons) subscribeButtons.forEach(btn => btn.style.display = 'none');
         if (manageSubscriptionButton) manageSubscriptionButton.style.display = 'block';
       } else {
         usageStatus.textContent = `${userExchangeCount} of ${dailyLimit} exchanges used today`;
         subscriptionStatus.textContent = 'Free plan';
-        if (subscribeButton) subscribeButton.style.display = 'block';
+        if (subscribeButtons) subscribeButtons.forEach(btn => btn.style.display = 'block');
         if (manageSubscriptionButton) manageSubscriptionButton.style.display = 'none';
       }
     }
@@ -682,8 +706,12 @@ if (firebaseConfig.apiKey) {
 
     function handleSubscription() {
       if (!auth || !currentUser) {
-        // User needs to be logged in
         document.getElementById('switch-to-login').click();
+        return;
+      }
+      if (!isEmailVerified()) {
+        showVerifyEmailMessage();
+        setTimeout(hideVerifyEmailMessage, 4000);
         return;
       }
       
@@ -691,6 +719,7 @@ if (firebaseConfig.apiKey) {
       
       if (isPremiumSelected) {
         // Create checkout session
+        showLoading();
         fetch('/api/create-checkout-session', {
           method: 'POST',
           headers: {
@@ -703,11 +732,13 @@ if (firebaseConfig.apiKey) {
         })
         .then(response => response.json())
         .then(session => {
+          hideLoading();
           // Redirect to Stripe Checkout
           return stripe.redirectToCheckout({ sessionId: session.id });
         })
         .catch(error => {
           console.error('Error creating checkout session:', error);
+          hideLoading();
         });
       } else {
         // Free plan selected, just close the panel
@@ -723,6 +754,7 @@ if (firebaseConfig.apiKey) {
         const password = document.getElementById('password-input').value;
         
         if (auth) {
+          showLoading();
           auth.signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
               // Update last login time
@@ -732,14 +764,17 @@ if (firebaseConfig.apiKey) {
               });
             })
             .then(() => {
+              hideLoading();
               toggleSettings(); // Close panel after successful login
             })
             .catch((error) => {
               console.error('Login error:', error);
               alert('Login failed: ' + error.message);
+              hideLoading();
             });
         } else {
           alert('Firebase not initialized. Check your configuration.');
+          hideLoading();
         }
       });
       
@@ -762,6 +797,10 @@ if (firebaseConfig.apiKey) {
                 createdAt: new Date().toISOString()
               });
 
+              // Send email verification
+              await user.sendEmailVerification();
+              alert('Verification email sent. Please check your inbox.');
+
               // Create Stripe customer and store ID in Firestore
               await fetch('/api/create-stripe-customer', {
                 method: 'POST',
@@ -769,26 +808,35 @@ if (firebaseConfig.apiKey) {
                 body: JSON.stringify({ userId: user.uid, email: user.email })
               });
 
+              hideLoading();
               toggleSettings(); // Close panel after successful signup
             })
             .catch((error) => {
               console.error('Signup error:', error);
               alert('Signup failed: ' + error.message);
+              hideLoading();
             });
         } else {
           alert('Firebase not initialized. Check your configuration.');
+          hideLoading();
         }
       });
       
       document.getElementById('logout-button').addEventListener('click', () => {
         if (auth) {
+          showLoading();
           auth.signOut().then(() => {
+            hideLoading();
             toggleSettings(); // Close panel after logout
           });
         }
       });
       
-      document.getElementById('subscribe-button').addEventListener('click', handleSubscription);
+      // Attach to all subscribe buttons
+      const subscribeButtons = document.querySelectorAll('.subscribe-button');
+      subscribeButtons.forEach(btn => {
+        btn.addEventListener('click', handleSubscription);
+      });
       
       document.getElementById('switch-to-signup').addEventListener('click', () => {
         document.getElementById('login-form').style.display = 'none';
@@ -808,6 +856,7 @@ if (firebaseConfig.apiKey) {
     return;
   }
 
+  showLoading();
   fetch('/api/create-customer-portal-session', {
     method: 'POST',
     headers: {
@@ -819,6 +868,7 @@ if (firebaseConfig.apiKey) {
   })
   .then(response => response.json())
   .then(data => {
+    hideLoading();
     if (data.url) {
       window.location.href = data.url;
     } else {
@@ -829,6 +879,7 @@ if (firebaseConfig.apiKey) {
   .catch(err => {
     console.error('Fetch error:', err);
     alert('Fetch error. Check console.');
+    hideLoading();
   });
 });
       
@@ -985,6 +1036,50 @@ if (messageCount >= 8 && !settingsVisible) {
   .catch((error) => {
     console.error("🚩 SIMPLE TEST ERROR:", error);
   });
+
+  // Add helper functions for loading overlay
+  function showLoading() {
+    document.getElementById('loading-overlay').style.display = 'flex';
+  }
+  function hideLoading() {
+    document.getElementById('loading-overlay').style.display = 'none';
+  }
+
+  // Add plan selection logic for user panel
+  function setupUserPanelPlanSelection() {
+    const userFreePlan = document.getElementById('user-free-plan');
+    const userPremiumPlan = document.getElementById('user-premium-plan');
+    userFreePlan.addEventListener('click', () => {
+      userFreePlan.classList.add('selected');
+      userPremiumPlan.classList.remove('selected');
+    });
+    userPremiumPlan.addEventListener('click', () => {
+      userPremiumPlan.classList.add('selected');
+      userFreePlan.classList.remove('selected');
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    // ... existing code ...
+    setupUserPanelPlanSelection();
+  });
+
+  // Block subscription if email not verified
+  function isEmailVerified() {
+    return auth && auth.currentUser && auth.currentUser.emailVerified;
+  }
+  function showVerifyEmailMessage() {
+    const msg = document.getElementById('verify-email-message');
+    if (msg) msg.style.display = 'block';
+  }
+  function hideVerifyEmailMessage() {
+    const msg = document.getElementById('verify-email-message');
+    if (msg) msg.style.display = 'none';
+  }
+
+  // Add success page logic
+  if (window.location.pathname === '/success') {
+    document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#fff;"><div style="font-size:22px;font-weight:400;margin-bottom:18px;">Thank you for upgrading!</div><div style="font-size:16px;color:#666;margin-bottom:32px;">Your payment was successful.<br>Your premium access will be available shortly.</div><button onclick=\"window.location.href='/'\" style="padding:10px 28px;font-size:16px;border-radius:6px;border:1px solid #eee;background:#fafafa;color:#333;cursor:pointer;transition:background 0.2s;">Return to Muse Mirror</button></div>`;
+  }
   </script>
 </body>
 </html>
