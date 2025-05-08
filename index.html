@@ -1009,7 +1009,6 @@ if (messageCount >= 8 && !settingsVisible) {
             conversation.prepend(responseItem);
             messageCount++;
             
-            // Increment the user's exchange count in Firebase
             if (currentUser) {
               incrementUserExchangeCount();
             }
