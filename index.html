@@ -1160,8 +1160,8 @@ if (messageCount >= 8 && !settingsVisible) {
     }
   });
 
-  // Make the settings icon lighter and increase clickable area
-  settingsDot.style.backgroundColor = '#bbb';
+  // Refine settings icon: small visible dot, larger clickable area
+  settingsDot.style.backgroundColor = 'transparent';
   settingsDot.style.width = '28px';
   settingsDot.style.height = '28px';
   settingsDot.style.borderRadius = '50%';
@@ -1169,10 +1169,9 @@ if (messageCount >= 8 && !settingsVisible) {
   settingsDot.style.alignItems = 'center';
   settingsDot.style.justifyContent = 'center';
   settingsDot.style.cursor = 'pointer';
-  settingsDot.style.transition = 'opacity 0.5s ease, transform 0.3s ease';
+  settingsDot.style.transition = 'opacity 0.5s ease';
   settingsDot.style.zIndex = '101';
-  settingsDot.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)';
-  settingsDot.innerHTML = '<div style="width:8px;height:8px;background:#bbb;border-radius:50%;margin:auto;"></div>';
+  settingsDot.innerHTML = '<div style="width:6px;height:6px;background:#bbb;border-radius:50%;"></div>';
   </script>
 </body>
 </html>
