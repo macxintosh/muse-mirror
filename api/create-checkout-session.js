@@ -31,12 +31,6 @@ module.exports = async function handler(req, res) {
         userId: userId,
         productType: 'lifetime',
         purchaseDate: new Date().toISOString()
-      },
-      payment_intent_data: {
-        metadata: {
-          userId: userId,
-          productType: 'lifetime'
-        }
       }
     });
 
