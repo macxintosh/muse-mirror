@@ -714,11 +714,16 @@ if (firebaseConfig.apiKey) {
         setTimeout(hideVerifyEmailMessage, 4000);
         return;
       }
-      
-      const isPremiumSelected = document.getElementById('premium-plan').classList.contains('selected');
-      
+
+      // Determine which plan is selected based on which panel is visible
+      let isPremiumSelected = false;
+      if (document.getElementById('user-panel').style.display === 'block') {
+        isPremiumSelected = document.getElementById('user-premium-plan').classList.contains('selected');
+      } else {
+        isPremiumSelected = document.getElementById('premium-plan').classList.contains('selected');
+      }
+
       if (isPremiumSelected) {
-        // Create checkout session
         showLoading();
         fetch('/api/create-checkout-session', {
           method: 'POST',
@@ -733,12 +738,12 @@ if (firebaseConfig.apiKey) {
         .then(response => response.json())
         .then(session => {
           hideLoading();
-          // Redirect to Stripe Checkout
           return stripe.redirectToCheckout({ sessionId: session.id });
         })
         .catch(error => {
           console.error('Error creating checkout session:', error);
           hideLoading();
+          alert('Failed to start checkout. Please try again.');
         });
       } else {
         // Free plan selected, just close the panel
