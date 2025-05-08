@@ -538,13 +538,19 @@ if (firebaseConfig.apiKey) {
     function updateUsageUI() {
       const usageStatus = document.getElementById('usage-status');
       const subscriptionStatus = document.getElementById('subscription-status');
+      const subscribeButton = document.getElementById('subscribe-button');
+      const manageSubscriptionButton = document.getElementById('manage-subscription');
       
       if (isPremium) {
         usageStatus.textContent = 'Unlimited exchanges';
         subscriptionStatus.textContent = 'Lifetime subscriber';
+        if (subscribeButton) subscribeButton.style.display = 'none';
+        if (manageSubscriptionButton) manageSubscriptionButton.style.display = 'block';
       } else {
         usageStatus.textContent = `${userExchangeCount} of ${dailyLimit} exchanges used today`;
         subscriptionStatus.textContent = 'Free plan';
+        if (subscribeButton) subscribeButton.style.display = 'block';
+        if (manageSubscriptionButton) manageSubscriptionButton.style.display = 'none';
       }
     }
 
