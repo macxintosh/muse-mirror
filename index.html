@@ -543,18 +543,7 @@ if (firebaseConfig.apiKey) {
       isDrawing = false;
     }
     
-    function toggleSettings(forceOpen) {
-      if (forceOpen === true) {
-        isSettingsOpen = true;
-        settingsPanel.classList.add('settings-visible');
-        return;
-      }
-      if (forceOpen === false) {
-        isSettingsOpen = false;
-        settingsPanel.classList.remove('settings-visible');
-        focusInput();
-        return;
-      }
+    function toggleSettings() {
       isSettingsOpen = !isSettingsOpen;
       if (isSettingsOpen) {
         settingsPanel.classList.add('settings-visible');
@@ -576,38 +565,17 @@ if (firebaseConfig.apiKey) {
       const subscriptionStatus = document.getElementById('subscription-status');
       const subscribeButtons = document.querySelectorAll('.subscribe-button');
       const manageSubscriptionButton = document.getElementById('manage-subscription');
-      const freePlan = document.getElementById('free-plan');
-      const premiumPlan = document.getElementById('premium-plan');
-      const userFreePlan = document.getElementById('user-free-plan');
-      const userPremiumPlan = document.getElementById('user-premium-plan');
-
+      
       if (isPremium) {
         usageStatus.textContent = 'Unlimited exchanges';
         subscriptionStatus.textContent = 'Lifetime subscriber';
         if (subscribeButtons) subscribeButtons.forEach(btn => btn.style.display = 'none');
         if (manageSubscriptionButton) manageSubscriptionButton.style.display = 'block';
-        if (freePlan) freePlan.style.display = 'none';
-        if (premiumPlan) premiumPlan.style.display = 'none';
-        if (userFreePlan) userFreePlan.style.display = 'none';
-        if (userPremiumPlan) {
-          userPremiumPlan.classList.add('selected');
-          userPremiumPlan.style.display = 'block';
-        }
       } else {
         usageStatus.textContent = `${userExchangeCount} of ${dailyLimit} exchanges used today`;
         subscriptionStatus.textContent = 'Free plan';
         if (subscribeButtons) subscribeButtons.forEach(btn => btn.style.display = 'block');
         if (manageSubscriptionButton) manageSubscriptionButton.style.display = 'none';
-        if (freePlan) freePlan.style.display = 'block';
-        if (premiumPlan) premiumPlan.style.display = 'block';
-        if (userFreePlan) {
-          userFreePlan.classList.add('selected');
-          userFreePlan.style.display = 'block';
-        }
-        if (userPremiumPlan) {
-          userPremiumPlan.classList.remove('selected');
-          userPremiumPlan.style.display = 'block';
-        }
       }
     }
 
@@ -738,7 +706,7 @@ if (firebaseConfig.apiKey) {
 
     function handleSubscription() {
       if (!auth || !currentUser) {
-        alert('Please sign up or log in to subscribe.');
+        document.getElementById('switch-to-login').click();
         return;
       }
       if (!isEmailVerified()) {
@@ -798,31 +766,19 @@ if (firebaseConfig.apiKey) {
           showLoading();
           auth.signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
-              if (!userCredential || !userCredential.user) {
-                throw new Error('No user returned from signInWithEmailAndPassword');
-              }
-              const user = userCredential.user;
-              if (!user.emailVerified) {
-                auth.signOut();
-                hideLoading();
-                document.getElementById('verify-email-message').innerHTML = 'Please verify your email before signing in. <button id="resend-verification">Resend verification email</button>';
-                document.getElementById('verify-email-message').style.display = 'block';
-                document.getElementById('verify-email-message').scrollIntoView();
-                document.getElementById('resend-verification').onclick = resendVerificationEmail;
-                // Return a resolved Promise to stop the chain
-                return Promise.resolve();
-              }
               // Update last login time
+              const user = userCredential.user;
               return db.collection('users').doc(user.uid).update({
                 lastLogin: new Date().toISOString()
-              }).then(() => {
-                hideLoading();
-                toggleSettings();
               });
+            })
+            .then(() => {
+              hideLoading();
+              toggleSettings(); // Close panel after successful login
             })
             .catch((error) => {
               console.error('Login error:', error);
-              alert('Login failed: ' + (error && error.message ? error.message : error));
+              alert('Login failed: ' + error.message);
               hideLoading();
             });
         } else {
@@ -953,7 +909,7 @@ if (firebaseConfig.apiKey) {
         if (isSettingsOpen && 
             !settingsPanel.contains(e.target) && 
             e.target !== settingsDot) {
-          toggleSettings(false);
+          toggleSettings();
         }
       });
     };
@@ -1133,65 +1089,6 @@ if (messageCount >= 8 && !settingsVisible) {
   if (window.location.pathname === '/success') {
     document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#fff;"><div style="font-size:22px;font-weight:400;margin-bottom:18px;">Thank you for upgrading!</div><div style="font-size:16px;color:#666;margin-bottom:32px;">Your payment was successful.<br>Your premium access will be available shortly.</div><button onclick=\"window.location.href='/'\" style="padding:10px 28px;font-size:16px;border-radius:6px;border:1px solid #eee;background:#fafafa;color:#333;cursor:pointer;transition:background 0.2s;">Return to Muse Mirror</button></div>`;
   }
-
-  // Add a helper to resend verification email
-  function resendVerificationEmail() {
-    if (auth && auth.currentUser && !auth.currentUser.emailVerified) {
-      auth.currentUser.sendEmailVerification({
-        url: window.location.origin // Set continueUrl to your site
-      }).then(() => {
-        alert('Verification email sent. Please check your inbox.');
-      }).catch((error) => {
-        alert('Failed to send verification email: ' + error.message);
-      });
-    }
-  }
-
-  // On page load, check for email verification in URL
-  if (window.location.search.includes('mode=verifyEmail')) {
-    document.getElementById('verify-email-message').textContent = 'Email verified! Please sign in.';
-    document.getElementById('verify-email-message').style.display = 'block';
-  }
-
-  // Only close settings panel if clicking outside or on the icon
-  settingsDot.addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleSettings();
-  });
-  document.addEventListener('click', (e) => {
-    if (isSettingsOpen && !settingsPanel.contains(e.target) && e.target !== settingsDot) {
-      toggleSettings(false);
-    }
-  });
-
-  // Refine settings icon: small visible dot, larger clickable area
-  settingsDot.style.backgroundColor = 'transparent';
-  settingsDot.style.width = '28px';
-  settingsDot.style.height = '28px';
-  settingsDot.style.borderRadius = '50%';
-  settingsDot.style.display = 'flex';
-  settingsDot.style.alignItems = 'center';
-  settingsDot.style.justifyContent = 'center';
-  settingsDot.style.cursor = 'pointer';
-  settingsDot.style.transition = 'opacity 0.5s ease';
-  settingsDot.style.zIndex = '101';
-  settingsDot.style.pointerEvents = 'auto';
-  settingsDot.innerHTML = '<div style="width:6px;height:6px;background:#bbb;border-radius:50%;"></div>';
-
-  // Re-attach event listener after setting innerHTML
-  settingsDot.onclick = function(e) {
-    e.stopPropagation();
-    console.log('Settings icon clicked'); // Debug log
-    toggleSettings();
-  };
-
-  // Force settings icon to always be visible for debugging
-  settingsDot.style.display = 'block';
-  settingsDot.style.opacity = '1';
-  settingsDot.style.position = 'fixed';
-  settingsDot.style.top = '20px';
-  settingsDot.style.right = '20px';
-  settingsDot.style.zIndex = '9999';
   </script>
 </body>
 </html>
