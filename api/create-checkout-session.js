@@ -19,18 +19,11 @@ module.exports = async function handler(req, res) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'Muse Mirror Lifetime',
-              description: 'Unlimited access to Muse Mirror',
-            },
-            unit_amount: 500, // $5.00
-          },
+          price: 'price_1RL9ryRLBoNQf97bpXdZfJvL', // Recurring subscription price ID
           quantity: 1,
         },
       ],
-      mode: 'payment',
+      mode: 'subscription',
       success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin}/`,
       customer_email: email,
