@@ -43,7 +43,6 @@ module.exports = async function handler(req, res) {
       success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin}/`,
       customer: stripeCustomerId, // Always use the user's Stripe customer
-      customer_email: email,
       metadata: {
         userId: userId,
         productType: 'lifetime',
