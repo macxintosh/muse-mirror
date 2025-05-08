@@ -742,20 +742,26 @@ if (firebaseConfig.apiKey) {
         
         if (auth) {
           auth.createUserWithEmailAndPassword(email, password)
-            .then((userCredential) => {
+            .then(async (userCredential) => {
               // Create user document in Firestore
               const user = userCredential.user;
               const today = new Date().toISOString().split('T')[0];
               
-              return db.collection('users').doc(user.uid).set({
+              await db.collection('users').doc(user.uid).set({
                 email: user.email,
                 premium: false,
                 dailyExchanges: 0,
                 lastExchangeDate: today,
                 createdAt: new Date().toISOString()
               });
-            })
-            .then(() => {
+
+              // Create Stripe customer and store ID in Firestore
+              await fetch('/api/create-stripe-customer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.uid, email: user.email })
+              });
+
               toggleSettings(); // Close panel after successful signup
             })
             .catch((error) => {
