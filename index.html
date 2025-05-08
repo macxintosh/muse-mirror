@@ -339,6 +339,76 @@
     }
 
     @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      #fixed-center {
+        width: 100vw;
+        max-width: 100vw;
+        left: 0;
+        top: 0;
+        transform: none;
+        height: 100dvh;
+        min-height: 100dvh;
+        position: fixed;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        z-index: 2;
+      }
+      #settings-dot {
+        width: 24px;
+        height: 24px;
+        top: 16px;
+        right: 16px;
+        border-radius: 50%;
+        z-index: 1000;
+      }
+      #settings-panel {
+        width: 95vw;
+        right: 2vw;
+        top: 48px;
+        left: unset;
+        max-width: 400px;
+      }
+      #canvas-container {
+        top: 40%;
+        min-height: 40dvh;
+        height: 60dvh;
+        max-height: 60dvh;
+      }
+      #conversation {
+        max-height: 30dvh;
+        min-height: 20dvh;
+        position: relative;
+        bottom: unset;
+        margin-bottom: 0;
+      }
+      .limit-message {
+        font-size: 16px;
+        max-width: 95vw;
+      }
+    }
+    html, body {
+      height: 100dvh;
+      min-height: 100dvh;
+      overflow: hidden !important;
+      position: fixed;
+      width: 100vw;
+      overscroll-behavior: none;
+      touch-action: none;
+    }
+    body {
+      overscroll-behavior-y: none;
+      -webkit-overflow-scrolling: auto;
+    }
+    #fixed-center, #canvas-container, #settings-panel {
+      overscroll-behavior: none;
+      touch-action: none;
+    }
+    /* Prevent scrolling on canvas */
+    #drawing-canvas {
+      touch-action: none;
+    }
   </style>
 </head>
 <body>
@@ -541,6 +611,12 @@ if (firebaseConfig.apiKey) {
 
     function stopDrawing() {
       isDrawing = false;
+      setTimeout(() => {
+        hiddenInput.focus();
+        cursor.style.opacity = '1';
+        cursor.style.animation = 'breathe 4.5s infinite ease-in-out';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
     }
     
     function toggleSettings() {
@@ -1089,6 +1165,24 @@ if (messageCount >= 8 && !settingsVisible) {
   if (window.location.pathname === '/success') {
     document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#fff;"><div style="font-size:22px;font-weight:400;margin-bottom:18px;">Thank you for upgrading!</div><div style="font-size:16px;color:#666;margin-bottom:32px;">Your payment was successful.<br>Your premium access will be available shortly.</div><button onclick=\"window.location.href='/'\" style="padding:10px 28px;font-size:16px;border-radius:6px;border:1px solid #eee;background:#fafafa;color:#333;cursor:pointer;transition:background 0.2s;">Return to Muse Mirror</button></div>`;
   }
+
+  // Show settings dot after first exchange on mobile (not just after 8 messages)
+  function showSettingsDotMobile() {
+    if (window.innerWidth <= 600 && !settingsVisible) {
+      settingsDot.style.opacity = '1';
+      settingsVisible = true;
+    }
+  }
+
+  // On resize, recalc viewport height for mobile
+  function setMobileVh() {
+    if (window.innerWidth <= 600) {
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+    }
+  }
+  window.addEventListener('resize', setMobileVh);
+  window.addEventListener('orientationchange', setMobileVh);
+  setMobileVh();
   </script>
 </body>
 </html>
