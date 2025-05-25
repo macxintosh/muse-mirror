@@ -2,19 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="format-detection" content="telephone=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Muse Mirror</title>
-  
   <!-- Firebase SDK -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
   <!-- Stripe JS -->
   <script src="https://js.stripe.com/v3/"></script>
-  
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap');
 
@@ -165,7 +160,7 @@
       opacity: 1 !important;
     }
 
-    /* Mobile-specific optimizations */
+    /* Mobile-specific optimizations - SIMPLE FIX */
     @media (max-width: 768px) {
       #canvas-container {
         top: calc(50% + 50px); /* More space on mobile to avoid cursor interference */
@@ -173,27 +168,6 @@
       
       #fixed-center {
         width: 95%;
-      }
-
-      .settings-input {
-        font-size: 16px;
-        -webkit-appearance: none;
-        -webkit-border-radius: 0;
-        border-radius: 4px;
-      }
-
-      .settings-button {
-        font-size: 16px;
-        -webkit-appearance: none;
-        min-height: 44px;
-      }
-
-      input[type="email"], input[type="password"] {
-        font-size: 16px;
-      }
-
-      .plan-option {
-        min-height: 44px;
       }
     }
 
@@ -392,19 +366,6 @@
     @keyframes spin { 
       100% { transform: rotate(360deg); } 
     }
-
-    .debug-info {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      font-size: 10px;
-      color: #999;
-      background: rgba(255,255,255,0.8);
-      padding: 5px;
-      border-radius: 3px;
-      max-width: 200px;
-      z-index: 1000;
-    }
   </style>
 </head>
 <body>
@@ -500,15 +461,7 @@
 
   <div id="verify-email-message" style="display:none;color:#b00;font-size:14px;text-align:center;margin:10px 0;">Please verify your email to upgrade.</div>
 
-  <div id="debug-info" class="debug-info">Initializing...</div>
-
   <script>
-    function debugLog(message) {
-      console.log('[DEBUG]', message);
-      const debugDiv = document.getElementById('debug-info');
-      if (debugDiv) debugDiv.textContent = message;
-    }
-
     // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBalUFW0wm0qWnZ_LlFd0sECpaKav3YjaE",
@@ -521,56 +474,29 @@
     };
 
     let firebaseApp, auth, db, stripe;
-    let firebaseInitialized = false;
     
-    function initializeFirebase() {
-      return new Promise((resolve, reject) => {
-        if (typeof firebase === 'undefined') {
-          debugLog('Firebase not loaded');
-          reject(new Error('Firebase not loaded'));
-          return;
+    if (firebaseConfig.apiKey) {
+      try {
+        if (!firebase.apps.length) {
+          firebaseApp = firebase.initializeApp(firebaseConfig);
+        } else {
+          firebaseApp = firebase.app();
         }
-        try {
-          debugLog('Initializing Firebase...');
-          if (!firebase.apps.length) {
-            firebaseApp = firebase.initializeApp(firebaseConfig);
-          } else {
-            firebaseApp = firebase.app();
-          }
-          auth = firebase.auth();
-          db = firebase.firestore();
-          
-          db.settings({
-            ignoreUndefinedProperties: true,
-            experimentalForceLongPolling: true,
-            useFetchStreams: false,
-            cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
-          });
-          
-          // Enable persistence
-          db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-            debugLog('Persistence failed: ' + err.code);
-          });
-          
-          stripe = Stripe('pk_test_51RKsC3RLBoNQf97bMRwplx9fLVOb9rOW0DW8DEXtdlJHidcFA68vvsJKGrJVil4Ug0VApK1Fk5QhQmVcSOCrjXwC00n3kZb0Ts');
-          
-          debugLog('Firebase initialized successfully');
-          firebaseInitialized = true;
-          resolve();
-        } catch (error) {
-          debugLog('Firebase init error: ' + error.message);
-          reject(error);
-        }
-      });
-    }
-
-    // Initialize Firebase when page loads
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(initializeFirebase, 500);
-      });
-    } else {
-      setTimeout(initializeFirebase, 500);
+        auth = firebase.auth();
+        db = firebase.firestore();
+        
+        db.settings({
+          ignoreUndefinedProperties: true,
+          experimentalForceLongPolling: true,
+          useFetchStreams: false
+        });
+        
+        stripe = Stripe('pk_test_51RKsC3RLBoNQf97bMRwplx9fLVOb9rOW0DW8DEXtdlJHidcFA68vvsJKGrJVil4Ug0VApK1Fk5QhQmVcSOCrjXwC00n3kZb0Ts');
+        
+        console.log("Firebase Firestore initialized successfully");
+      } catch (error) {
+        console.error("Firebase initialization error:", error);
+      }
     }
 
     const hiddenInput = document.getElementById('hidden-input');
@@ -685,7 +611,7 @@
     }
 
     function updateUserData() {
-      if (!auth || !currentUser || !firebaseInitialized) return;
+      if (!auth || !currentUser) return;
       
       const today = new Date().toISOString().split('T')[0];
       
@@ -713,12 +639,12 @@
           updateUsageUI();
         }
       }).catch((error) => {
-        debugLog("Error getting user data: " + error.message);
+        console.error("Error getting user data:", error);
       });
     }
 
     function incrementUserExchangeCount() {
-      if (!auth || !currentUser || !firebaseInitialized) return;
+      if (!auth || !currentUser) return;
       
       const today = new Date().toISOString().split('T')[0];
       userExchangeCount++;
@@ -727,23 +653,17 @@
         dailyExchanges: userExchangeCount,
         lastExchangeDate: today
       }).catch((error) => {
-        debugLog("Error updating exchange count: " + error.message);
+        console.error("Error updating exchange count:", error);
       });
       
       updateUsageUI();
     }
 
     function setupAuthListeners() {
-      if (!auth || !firebaseInitialized) {
-        debugLog('Auth not ready, retrying in 1s...');
-        setTimeout(setupAuthListeners, 1000);
-        return;
-      }
+      if (!auth) return;
       
-      debugLog('Setting up auth listeners');
       auth.onAuthStateChanged((user) => {
         currentUser = user;
-        debugLog('Auth state changed: ' + (user ? user.email : 'signed out'));
         
         const loginForm = document.getElementById('login-form');
         const signupForm = document.getElementById('signup-form');
@@ -843,198 +763,73 @@
       }
     }
 
-    // Enhanced login function with retry logic
-    async function attemptLogin(email, password, retryCount = 0) {
-      const maxRetries = 3;
-      try {
-        debugLog(`Login attempt ${retryCount + 1} for ${email}`);
-        
-        if (!firebaseInitialized) {
-          debugLog('Waiting for Firebase...');
-          await initializeFirebase();
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        
-        if (!auth) {
-          throw new Error('Firebase Auth not available');
-        }
-        
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        
-        if (!user || !user.uid) {
-          throw new Error('Invalid user credentials received');
-        }
-        
-        debugLog('Login successful for ' + user.email);
-        
-        // Try to update last login, but don't fail if it doesn't work
-        try {
-          if (firebaseInitialized && db) {
-            await db.collection('users').doc(user.uid).update({
-              lastLogin: new Date().toISOString()
-            });
-          }
-        } catch (updateError) {
-          debugLog('Could not update last login: ' + updateError.message);
-        }
-        
-        return user;
-      } catch (error) {
-        debugLog(`Login attempt ${retryCount + 1} failed: ${error.message}`);
-        
-        if (retryCount < maxRetries) {
-          debugLog(`Retrying in 2 seconds...`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          return attemptLogin(email, password, retryCount + 1);
-        }
-        
-        throw error;
-      }
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
-      debugLog('DOM loaded, setting up event listeners');
-      
-      document.getElementById('login-button').addEventListener('click', async () => {
-        const email = document.getElementById('email-input').value.trim();
+      document.getElementById('login-button').addEventListener('click', () => {
+        const email = document.getElementById('email-input').value;
         const password = document.getElementById('password-input').value;
         
-        debugLog(`Login button clicked for: ${email}`);
-        
-        if (!email || !password) {
-          alert('Please enter both email and password');
-          return;
-        }
-        
-        try {
+        if (auth) {
           showLoading();
-          const user = await attemptLogin(email, password);
+          auth.signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+              const user = userCredential.user;
+              return db.collection('users').doc(user.uid).update({
+                lastLogin: new Date().toISOString()
+              });
+            })
+            .then(() => {
+              hideLoading();
+              toggleSettings();
+            })
+            .catch((error) => {
+              console.error('Login error:', error);
+              alert('Login failed: ' + error.message);
+              hideLoading();
+            });
+        } else {
+          alert('Firebase not initialized. Check your configuration.');
           hideLoading();
-          toggleSettings();
-          debugLog('Login process completed successfully');
-        } catch (error) {
-          debugLog('Final login error: ' + error.message);
-          hideLoading();
-          
-          let errorMessage = 'Login failed. ';
-          if (error.code) {
-            switch (error.code) {
-              case 'auth/user-not-found':
-                errorMessage += 'No account found with this email.';
-                break;
-              case 'auth/wrong-password':
-                errorMessage += 'Incorrect password.';
-                break;
-              case 'auth/invalid-email':
-                errorMessage += 'Invalid email address.';
-                break;
-              case 'auth/network-request-failed':
-                errorMessage += 'Network error. Please check your connection and try again.';
-                break;
-              case 'auth/too-many-requests':
-                errorMessage += 'Too many failed attempts. Please wait and try again.';
-                break;
-              default:
-                errorMessage += `Error: ${error.code}. Please try again.`;
-            }
-          } else {
-            errorMessage += 'Please check your connection and try again.';
-          }
-          alert(errorMessage);
         }
       });
       
-      document.getElementById('signup-button').addEventListener('click', async () => {
-        const email = document.getElementById('signup-email').value.trim();
+      document.getElementById('signup-button').addEventListener('click', () => {
+        const email = document.getElementById('signup-email').value;
         const password = document.getElementById('signup-password').value;
         
-        debugLog(`Signup button clicked for: ${email}`);
-        
-        if (!email || !password) {
-          alert('Please enter both email and password');
-          return;
-        }
-        
-        if (password.length < 6) {
-          alert('Password must be at least 6 characters long');
-          return;
-        }
-        
-        try {
-          showLoading();
-          
-          if (!firebaseInitialized) {
-            await initializeFirebase();
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-          
-          if (!auth) {
-            throw new Error('Firebase Auth not available');
-          }
-          
-          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-          const user = userCredential.user;
-          const today = new Date().toISOString().split('T')[0];
-          
-          if (!user || !user.uid) {
-            throw new Error('Invalid user credentials received');
-          }
-          
-          debugLog('User created: ' + user.email);
-          
-          if (firebaseInitialized && db) {
-            await db.collection('users').doc(user.uid).set({
-              email: user.email,
-              premium: false,
-              dailyExchanges: 0,
-              lastExchangeDate: today,
-              createdAt: new Date().toISOString()
+        if (auth) {
+          auth.createUserWithEmailAndPassword(email, password)
+            .then(async (userCredential) => {
+              const user = userCredential.user;
+              const today = new Date().toISOString().split('T')[0];
+              
+              await db.collection('users').doc(user.uid).set({
+                email: user.email,
+                premium: false,
+                dailyExchanges: 0,
+                lastExchangeDate: today,
+                createdAt: new Date().toISOString()
+              });
+
+              await user.sendEmailVerification();
+              alert('Verification email sent. Please check your inbox.');
+
+              await fetch('/api/create-stripe-customer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.uid, email: user.email })
+              });
+
+              hideLoading();
+              toggleSettings();
+            })
+            .catch((error) => {
+              console.error('Signup error:', error);
+              alert('Signup failed: ' + error.message);
+              hideLoading();
             });
-          }
-
-          await user.sendEmailVerification();
-          alert('Account created! Verification email sent. Please check your inbox.');
-
-          try {
-            await fetch('/api/create-stripe-customer', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: user.uid, email: user.email })
-            });
-          } catch (stripeError) {
-            debugLog('Stripe customer creation failed: ' + stripeError.message);
-          }
-
+        } else {
+          alert('Firebase not initialized. Check your configuration.');
           hideLoading();
-          toggleSettings();
-          debugLog('Signup process completed successfully');
-        } catch (error) {
-          debugLog('Signup error: ' + error.message);
-          hideLoading();
-          
-          let errorMessage = 'Signup failed. ';
-          if (error.code) {
-            switch (error.code) {
-              case 'auth/email-already-in-use':
-                errorMessage += 'An account with this email already exists.';
-                break;
-              case 'auth/invalid-email':
-                errorMessage += 'Invalid email address.';
-                break;
-              case 'auth/weak-password':
-                errorMessage += 'Password is too weak.';
-                break;
-              case 'auth/network-request-failed':
-                errorMessage += 'Network error. Please check your connection and try again.';
-                break;
-              default:
-                errorMessage += `Error: ${error.code}. Please try again.`;
-            }
-          } else {
-            errorMessage += 'Please check your connection and try again.';
-          }
-          alert(errorMessage);
         }
       });
       
@@ -1044,11 +839,6 @@
           auth.signOut().then(() => {
             hideLoading();
             toggleSettings();
-            debugLog('User signed out');
-          }).catch((error) => {
-            debugLog('Logout error: ' + error.message);
-            hideLoading();
-            alert('Logout failed. Please try again.');
           });
         }
       });
@@ -1104,11 +894,10 @@
       });
       
       setupPlanSelection();
-      setTimeout(setupAuthListeners, 1000);
+      setupAuthListeners();
     });
 
     window.onload = function () {
-      debugLog('Window loaded');
       focusInput();
       window.addEventListener('resize', () => {
         if (canvasActivated) {
@@ -1246,18 +1035,13 @@
       }
     }, 60000);
 
-    // Test Firestore connection
-    setTimeout(() => {
-      if (firebaseInitialized && db) {
-        db.collection("testCollection").get()
-          .then((snapshot) => {
-            debugLog(`✅ Firestore connected: ${snapshot.docs.length} docs`);
-          })
-          .catch((error) => {
-            debugLog(`🚩 Firestore test error: ${error.message}`);
-          });
-      }
-    }, 2000);
+    firebase.firestore().collection("testCollection").get()
+      .then((snapshot) => {
+        console.log("✅ SUCCESSFUL CONNECTION TO FIRESTORE:", snapshot.docs.length);
+      })
+      .catch((error) => {
+        console.error("🚩 SIMPLE TEST ERROR:", error);
+      });
 
     function showLoading() {
       document.getElementById('loading-overlay').style.display = 'flex';
@@ -1295,7 +1079,7 @@
     }
 
     if (window.location.pathname === '/success') {
-      document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#fff;"><div style="font-size:22px;font-weight:400;margin-bottom:18px;">Thank you for upgrading!</div><div style="font-size:16px;color:#666;margin-bottom:32px;">Your payment was successful.<br>Your premium access will be available shortly.</div><button onclick="window.location.href='/'" style="padding:10px 28px;font-size:16px;border-radius:6px;border:1px solid #eee;background:#fafafa;color:#333;cursor:pointer;transition:background 0.2s;">Return to Muse Mirror</button></div>`;
+      document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#fff;"><div style="font-size:22px;font-weight:400;margin-bottom:18px;">Thank you for upgrading!</div><div style="font-size:16px;color:#666;margin-bottom:32px;">Your payment was successful.<br>Your premium access will be available shortly.</div><button onclick=\"window.location.href='/'\" style="padding:10px 28px;font-size:16px;border-radius:6px;border:1px solid #eee;background:#fafafa;color:#333;cursor:pointer;transition:background 0.2s;">Return to Muse Mirror</button></div>`;
     }
   </script>
 </body>
