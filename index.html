@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="format-detection" content="telephone=no">
   <title>Muse Mirror</title>
   <!-- Firebase SDK -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
@@ -160,7 +163,7 @@
       opacity: 1 !important;
     }
 
-    /* Mobile-specific optimizations - SIMPLE FIX */
+    /* Mobile-specific optimizations */
     @media (max-width: 768px) {
       #canvas-container {
         top: calc(50% + 50px); /* More space on mobile to avoid cursor interference */
@@ -169,6 +172,37 @@
       #fixed-center {
         width: 95%;
       }
+      
+      /* Mobile-specific input fixes */
+      .settings-input {
+        font-size: 16px; /* Prevents zoom on iOS */
+        -webkit-appearance: none;
+        -webkit-border-radius: 0;
+        border-radius: 4px;
+      }
+      
+      .settings-button {
+        font-size: 16px; /* Prevents zoom on iOS */
+        -webkit-appearance: none;
+        min-height: 44px; /* iOS recommended touch target */
+      }
+      
+      /* Prevent iOS Safari from zooming on input focus */
+      input[type="email"], 
+      input[type="password"] {
+        font-size: 16px;
+      }
+      
+      /* Improve touch targets */
+      .plan-option {
+        min-height: 44px; /* iOS recommended touch target */
+      }
+    }
+
+    /* Force hardware acceleration for smoother performance */
+    .settings-panel, .settings-input, .settings-button {
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
     }
 
     /* Settings UI */
@@ -764,72 +798,168 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-      document.getElementById('login-button').addEventListener('click', () => {
-        const email = document.getElementById('email-input').value;
+      // IMPROVED LOGIN FUNCTION WITH BETTER ERROR HANDLING
+      document.getElementById('login-button').addEventListener('click', async () => {
+        const email = document.getElementById('email-input').value.trim();
         const password = document.getElementById('password-input').value;
         
-        if (auth) {
+        if (!email || !password) {
+          alert('Please enter both email and password');
+          return;
+        }
+        
+        if (!auth) {
+          alert('Authentication service not available. Please refresh the page and try again.');
+          return;
+        }
+
+        try {
           showLoading();
-          auth.signInWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-              const user = userCredential.user;
-              return db.collection('users').doc(user.uid).update({
-                lastLogin: new Date().toISOString()
-              });
-            })
-            .then(() => {
-              hideLoading();
-              toggleSettings();
-            })
-            .catch((error) => {
-              console.error('Login error:', error);
-              alert('Login failed: ' + error.message);
-              hideLoading();
+          
+          // Add a small delay to ensure Firebase is fully loaded
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          const userCredential = await auth.signInWithEmailAndPassword(email, password);
+          const user = userCredential.user;
+          
+          // Verify the user object is valid before proceeding
+          if (!user || !user.uid) {
+            throw new Error('Invalid user credentials received');
+          }
+          
+          // Update last login with error handling
+          try {
+            await db.collection('users').doc(user.uid).update({
+              lastLogin: new Date().toISOString()
             });
-        } else {
-          alert('Firebase not initialized. Check your configuration.');
+          } catch (updateError) {
+            console.warn('Could not update last login:', updateError);
+            // Don't fail the login for this
+          }
+          
           hideLoading();
+          toggleSettings();
+          
+        } catch (error) {
+          console.error('Login error:', error);
+          hideLoading();
+          
+          // Provide more helpful error messages
+          let errorMessage = 'Login failed. ';
+          
+          if (error.code) {
+            switch (error.code) {
+              case 'auth/user-not-found':
+                errorMessage += 'No account found with this email.';
+                break;
+              case 'auth/wrong-password':
+                errorMessage += 'Incorrect password.';
+                break;
+              case 'auth/invalid-email':
+                errorMessage += 'Invalid email address.';
+                break;
+              case 'auth/network-request-failed':
+                errorMessage += 'Network error. Please check your connection and try again.';
+                break;
+              case 'auth/too-many-requests':
+                errorMessage += 'Too many failed attempts. Please wait and try again.';
+                break;
+              default:
+                errorMessage += 'Please try again or contact support.';
+            }
+          } else {
+            errorMessage += 'Please refresh the page and try again.';
+          }
+          
+          alert(errorMessage);
         }
       });
       
-      document.getElementById('signup-button').addEventListener('click', () => {
-        const email = document.getElementById('signup-email').value;
+      // IMPROVED SIGNUP FUNCTION
+      document.getElementById('signup-button').addEventListener('click', async () => {
+        const email = document.getElementById('signup-email').value.trim();
         const password = document.getElementById('signup-password').value;
         
-        if (auth) {
-          auth.createUserWithEmailAndPassword(email, password)
-            .then(async (userCredential) => {
-              const user = userCredential.user;
-              const today = new Date().toISOString().split('T')[0];
-              
-              await db.collection('users').doc(user.uid).set({
-                email: user.email,
-                premium: false,
-                dailyExchanges: 0,
-                lastExchangeDate: today,
-                createdAt: new Date().toISOString()
-              });
+        if (!email || !password) {
+          alert('Please enter both email and password');
+          return;
+        }
 
-              await user.sendEmailVerification();
-              alert('Verification email sent. Please check your inbox.');
+        if (password.length < 6) {
+          alert('Password must be at least 6 characters long');
+          return;
+        }
 
-              await fetch('/api/create-stripe-customer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.uid, email: user.email })
-              });
+        if (!auth) {
+          alert('Authentication service not available. Please refresh the page and try again.');
+          return;
+        }
 
-              hideLoading();
-              toggleSettings();
-            })
-            .catch((error) => {
-              console.error('Signup error:', error);
-              alert('Signup failed: ' + error.message);
-              hideLoading();
+        try {
+          showLoading();
+          
+          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+          const user = userCredential.user;
+          const today = new Date().toISOString().split('T')[0];
+          
+          // Verify the user object is valid
+          if (!user || !user.uid) {
+            throw new Error('Invalid user credentials received');
+          }
+          
+          await db.collection('users').doc(user.uid).set({
+            email: user.email,
+            premium: false,
+            dailyExchanges: 0,
+            lastExchangeDate: today,
+            createdAt: new Date().toISOString()
+          });
+
+          await user.sendEmailVerification();
+          alert('Account created! Verification email sent. Please check your inbox.');
+
+          // Create Stripe customer with error handling
+          try {
+            await fetch('/api/create-stripe-customer', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: user.uid, email: user.email })
             });
-        } else {
-          alert('Firebase not initialized. Check your configuration.');
+          } catch (stripeError) {
+            console.warn('Stripe customer creation failed:', stripeError);
+            // Don't fail the signup for this
+          }
+
           hideLoading();
+          toggleSettings();
+          
+        } catch (error) {
+          console.error('Signup error:', error);
+          hideLoading();
+          
+          let errorMessage = 'Signup failed. ';
+          if (error.code) {
+            switch (error.code) {
+              case 'auth/email-already-in-use':
+                errorMessage += 'An account with this email already exists.';
+                break;
+              case 'auth/invalid-email':
+                errorMessage += 'Invalid email address.';
+                break;
+              case 'auth/weak-password':
+                errorMessage += 'Password is too weak.';
+                break;
+              case 'auth/network-request-failed':
+                errorMessage += 'Network error. Please check your connection and try again.';
+                break;
+              default:
+                errorMessage += 'Please try again or contact support.';
+            }
+          } else {
+            errorMessage += 'Please refresh the page and try again.';
+          }
+          
+          alert(errorMessage);
         }
       });
       
@@ -839,6 +969,10 @@
           auth.signOut().then(() => {
             hideLoading();
             toggleSettings();
+          }).catch((error) => {
+            console.error('Logout error:', error);
+            hideLoading();
+            alert('Logout failed. Please try again.');
           });
         }
       });
