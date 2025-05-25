@@ -7,399 +7,133 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="format-detection" content="telephone=no">
   <title>Muse Mirror</title>
-  <!-- Firebase SDK -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
-  <!-- Stripe JS -->
+  
+  <!-- Updated Firebase SDK -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.15.0/firebase-app-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.15.0/firebase-auth-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.15.0/firebase-firestore-compat.min.js"></script>
   <script src="https://js.stripe.com/v3/"></script>
+  
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap');
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: white;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-      position: relative;
-      /* Prevent mobile scrolling and zooming */
-      touch-action: manipulation;
-      -webkit-text-size-adjust: 100%;
+      background-color: white; height: 100vh; width: 100vw; overflow: hidden; position: relative;
+      touch-action: manipulation; -webkit-text-size-adjust: 100%;
     }
-
     #fixed-center {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 90%;
-      max-width: 800px;
-      z-index: 10;
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 90%; max-width: 800px; z-index: 10;
     }
-
-    #input-line {
-      display: flex;
-      align-items: center;
-      height: 30px;
-      position: relative;
-      z-index: 15;
-    }
-
+    #input-line { display: flex; align-items: center; height: 30px; position: relative; z-index: 15; }
     #displayed-text {
-      font-weight: 300;
-      font-size: 20px;
-      letter-spacing: -0.01em;
-      color: #333;
-      white-space: pre;
+      font-weight: 300; font-size: 20px; letter-spacing: -0.01em; color: #333; white-space: pre;
     }
-
     #cursor {
-      display: inline-block;
-      width: 2px;
-      height: 24px;
-      background-color: #333;
-      animation: breathe 4.5s infinite ease-in-out;
-      margin-left: 1px;
-      position: relative;
-      z-index: 20;
+      display: inline-block; width: 2px; height: 24px; background-color: #333;
+      animation: breathe 4.5s infinite ease-in-out; margin-left: 1px; position: relative; z-index: 20;
     }
-
-    @keyframes breathe {
-      0%, 100% { opacity: 0.2; }
-      50% { opacity: 1; }
-    }
-
-    #hidden-input {
-      position: absolute;
-      opacity: 0;
-      height: 0;
-      width: 0;
-      z-index: 20;
-    }
-
+    @keyframes breathe { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+    #hidden-input { position: absolute; opacity: 0; height: 0; width: 0; z-index: 20; }
     #conversation {
-      position: absolute;
-      width: 100%;
-      max-height: 45vh;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column-reverse;
-      bottom: 100%;
-      margin-bottom: 10px;
-      z-index: 10;
-      -webkit-overflow-scrolling: touch;
+      position: absolute; width: 100%; max-height: 45vh; overflow-y: auto;
+      display: flex; flex-direction: column-reverse; bottom: 100%; margin-bottom: 10px;
+      z-index: 10; -webkit-overflow-scrolling: touch;
     }
-
     .conversation-item {
-      margin-bottom: 10px;
-      font-size: 20px;
-      letter-spacing: -0.01em;
-      font-weight: 300;
-      line-height: 1.5;
-      text-align: left;
-      transition: transform 0.4s ease-out;
+      margin-bottom: 10px; font-size: 20px; letter-spacing: -0.01em; font-weight: 300;
+      line-height: 1.5; text-align: left; transition: transform 0.4s ease-out;
     }
-
-    .user-text {
-      color: #333;
-    }
-
-    .response-text {
-      color: #666;
-      opacity: 0;
-      animation: fadeIn 2s forwards;
-    }
-
-    .smooth-transition {
-      transition: opacity 0.5s ease-out;
-    }
-
-    @keyframes fadeIn {
-      to { opacity: 1; }
-    }
-
+    .user-text { color: #333; }
+    .response-text { color: #666; opacity: 0; animation: fadeIn 2s forwards; }
+    .smooth-transition { transition: opacity 0.5s ease-out; }
+    @keyframes fadeIn { to { opacity: 1; } }
     #canvas-container {
-      position: fixed;
-      left: 0;
-      right: 0;
-      top: calc(50% + 15px);
-      bottom: 0;
-      display: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 1;
+      position: fixed; left: 0; right: 0; top: calc(50% + 15px); bottom: 0;
+      display: none; opacity: 0; transition: opacity 0.3s ease; z-index: 1;
     }
-
-    #drawing-canvas {
-      width: 100%;
-      height: 100%;
-      cursor: crosshair;
-      background-color: white;
-    }
-
+    #drawing-canvas { width: 100%; height: 100%; cursor: crosshair; background-color: white; }
     #canvas-gradient {
-      position: absolute;
-      top: -2px;
-      left: 0;
-      width: 100%;
-      height: calc(100% + 2px);
-      pointer-events: none;
-      background: linear-gradient(to bottom,
-        rgba(255, 255, 255, 1) 0%,
-        rgba(255, 255, 255, 0.96) 4%,
-        rgba(255, 255, 255, 0.8) 10%,
-        rgba(255, 255, 255, 0.4) 18%,
+      position: absolute; top: -2px; left: 0; width: 100%; height: calc(100% + 2px);
+      pointer-events: none; background: linear-gradient(to bottom,
+        rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.96) 4%,
+        rgba(255, 255, 255, 0.8) 10%, rgba(255, 255, 255, 0.4) 18%,
         rgba(255, 255, 255, 0) 30%);
     }
-
-    .canvas-visible {
-      opacity: 1 !important;
-    }
-
-    /* Mobile-specific optimizations */
+    .canvas-visible { opacity: 1 !important; }
     @media (max-width: 768px) {
-      #canvas-container {
-        top: calc(50% + 50px); /* More space on mobile to avoid cursor interference */
-      }
-      
-      #fixed-center {
-        width: 95%;
-      }
-      
-      /* Mobile-specific input fixes */
-      .settings-input {
-        font-size: 16px; /* Prevents zoom on iOS */
-        -webkit-appearance: none;
-        -webkit-border-radius: 0;
-        border-radius: 4px;
-      }
-      
-      .settings-button {
-        font-size: 16px; /* Prevents zoom on iOS */
-        -webkit-appearance: none;
-        min-height: 44px; /* iOS recommended touch target */
-      }
-      
-      /* Prevent iOS Safari from zooming on input focus */
-      input[type="email"], 
-      input[type="password"] {
-        font-size: 16px;
-      }
-      
-      /* Improve touch targets */
-      .plan-option {
-        min-height: 44px; /* iOS recommended touch target */
-      }
+      #canvas-container { top: calc(50% + 50px); }
+      #fixed-center { width: 95%; }
+      .settings-input { font-size: 16px; -webkit-appearance: none; -webkit-border-radius: 0; border-radius: 4px; }
+      .settings-button { font-size: 16px; -webkit-appearance: none; min-height: 44px; }
+      input[type="email"], input[type="password"] { font-size: 16px; }
+      .plan-option { min-height: 44px; }
     }
-
-    /* Force hardware acceleration for smoother performance */
     .settings-panel, .settings-input, .settings-button {
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
+      -webkit-transform: translateZ(0); transform: translateZ(0);
     }
-
-    /* Settings UI */
     #settings-dot {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 4px;
-      height: 4px;
-      background-color: #333;
-      border-radius: 50%;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.5s ease, transform 0.3s ease;
-      z-index: 100;
+      position: absolute; top: 20px; right: 20px; width: 4px; height: 4px;
+      background-color: #333; border-radius: 50%; cursor: pointer; opacity: 0;
+      transition: opacity 0.5s ease, transform 0.3s ease; z-index: 100;
     }
-
-    #settings-dot:hover {
-      transform: scale(1.5);
-    }
-
+    #settings-dot:hover { transform: scale(1.5); }
     #settings-panel {
-      position: absolute;
-      top: 40px;
-      right: 20px;
-      width: 280px;
-      background-color: white;
-      border: 1px solid #eee;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-      padding: 20px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-      z-index: 100;
+      position: absolute; top: 40px; right: 20px; width: 280px; background-color: white;
+      border: 1px solid #eee; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); border-radius: 8px;
+      padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 100;
     }
-
-    .settings-visible {
-      opacity: 1 !important;
-      pointer-events: auto !important;
-    }
-
-    .settings-heading {
-      font-size: 16px;
-      font-weight: 400;
-      margin-bottom: 15px;
-      color: #333;
-    }
-
+    .settings-visible { opacity: 1 !important; pointer-events: auto !important; }
+    .settings-heading { font-size: 16px; font-weight: 400; margin-bottom: 15px; color: #333; }
     .settings-input {
-      width: 100%;
-      padding: 8px 10px;
-      margin-bottom: 10px;
-      border: 1px solid #eee;
-      border-radius: 4px;
-      font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.3s;
+      width: 100%; padding: 8px 10px; margin-bottom: 10px; border: 1px solid #eee;
+      border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 14px;
+      outline: none; transition: border-color 0.3s;
     }
-
-    .settings-input:focus {
-      border-color: #ccc;
-    }
-
+    .settings-input:focus { border-color: #ccc; }
     .settings-button {
-      width: 100%;
-      padding: 8px 0;
-      margin: 5px 0;
-      background-color: white;
-      border: 1px solid #eee;
-      border-radius: 4px;
-      font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      color: #333;
-      cursor: pointer;
-      transition: background-color 0.3s;
+      width: 100%; padding: 8px 0; margin: 5px 0; background-color: white;
+      border: 1px solid #eee; border-radius: 4px; font-family: 'Inter', sans-serif;
+      font-size: 14px; color: #333; cursor: pointer; transition: background-color 0.3s;
     }
-
-    .settings-button:hover {
-      background-color: #f9f9f9;
-    }
-
-    .settings-button.primary {
-      background-color: #f0f0f0;
-      border-color: #ddd;
-    }
-
-    .settings-button.primary:hover {
-      background-color: #e8e8e8;
-    }
-
-    .settings-divider {
-      height: 1px;
-      background-color: #eee;
-      margin: 15px 0;
-    }
-
+    .settings-button:hover { background-color: #f9f9f9; }
+    .settings-button.primary { background-color: #f0f0f0; border-color: #ddd; }
+    .settings-button.primary:hover { background-color: #e8e8e8; }
+    .settings-divider { height: 1px; background-color: #eee; margin: 15px 0; }
     .plan-option {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      margin-bottom: 8px;
-      border: 1px solid #eee;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.2s;
+      display: flex; justify-content: space-between; align-items: center; padding: 10px;
+      margin-bottom: 8px; border: 1px solid #eee; border-radius: 4px;
+      cursor: pointer; transition: background-color 0.2s;
     }
-
-    .plan-option:hover, .plan-option.selected {
-      background-color: #f9f9f9;
-    }
-
-    .plan-option.selected {
-      border-color: #ddd;
-    }
-
-    .plan-name {
-      font-size: 14px;
-    }
-
-    .plan-price {
-      font-size: 14px;
-      color: #666;
-    }
-
-    .plan-description {
-      font-size: 12px;
-      color: #888;
-      margin-top: 2px;
-    }
-
-    .eth-note {
-      font-size: 12px;
-      color: #888;
-      margin-top: 10px;
-      line-height: 1.4;
-    }
-
+    .plan-option:hover, .plan-option.selected { background-color: #f9f9f9; }
+    .plan-option.selected { border-color: #ddd; }
+    .plan-name { font-size: 14px; }
+    .plan-price { font-size: 14px; color: #666; }
+    .plan-description { font-size: 12px; color: #888; margin-top: 2px; }
+    .eth-note { font-size: 12px; color: #888; margin-top: 10px; line-height: 1.4; }
     .auth-toggle {
-      font-size: 13px;
-      color: #888;
-      text-align: center;
-      margin-top: 12px;
-      cursor: pointer;
+      font-size: 13px; color: #888; text-align: center; margin-top: 12px; cursor: pointer;
     }
-
-    .auth-toggle:hover {
-      color: #666;
-    }
-
-    .auth-status {
-      font-size: 13px;
-      color: #888;
-      text-align: center;
-      margin-top: 8px;
-    }
-
-    .usage-info {
-      font-size: 13px;
-      color: #888;
-      margin-top: 10px;
-      text-align: center;
-    }
-
+    .auth-toggle:hover { color: #666; }
+    .auth-status { font-size: 13px; color: #888; text-align: center; margin-top: 8px; }
+    .usage-info { font-size: 13px; color: #888; margin-top: 10px; text-align: center; }
     .limit-message {
-      position: absolute;
-      left: 50%;
-      top: 40%;
-      transform: translate(-50%, -50%);
-      font-size: 18px;
-      color: #888;
-      opacity: 0;
-      transition: opacity 0.8s ease;
-      text-align: center;
-      width: 90%;
-      max-width: 400px;
-      z-index: 50;
+      position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
+      font-size: 18px; color: #888; opacity: 0; transition: opacity 0.8s ease;
+      text-align: center; width: 90%; max-width: 400px; z-index: 50;
     }
-
     .logout-button {
-      font-size: 13px;
-      color: #888;
-      text-align: center;
-      margin-top: 15px;
-      cursor: pointer;
-      padding: 5px;
+      font-size: 13px; color: #888; text-align: center; margin-top: 15px;
+      cursor: pointer; padding: 5px;
     }
-
-    .logout-button:hover {
-      color: #666;
+    .logout-button:hover { color: #666; }
+    .debug-info {
+      position: fixed; bottom: 10px; left: 10px; font-size: 10px; color: #999;
+      background: rgba(255,255,255,0.8); padding: 5px; border-radius: 3px;
+      max-width: 200px; z-index: 1000;
     }
-
-    @keyframes spin { 
-      100% { transform: rotate(360deg); } 
-    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -483,20 +217,21 @@
     </div>
   </div>
 
-  <div id="limit-message" class="limit-message">
-    that's all the light I've got for now
-  </div>
-
-  <div id="loading-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(255,255,255,0.6);z-index:999;align-items:center;justify-content:center;transition:opacity 0.2s;">
+  <div id="limit-message" class="limit-message">that's all the light I've got for now</div>
+  <div id="loading-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(255,255,255,0.6);z-index:999;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s;">
     <div style="width:36px;height:36px;border:3px solid #ddd;border-top:3px solid #333;border-radius:50%;animation:spin 1s linear infinite;"></div>
   </div>
-
   <div id="processing-message" style="display:none;position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #eee;padding:12px 24px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.04);font-size:15px;color:#333;z-index:1001;">Your upgrade is processing. Please refresh in a moment.</div>
-
   <div id="verify-email-message" style="display:none;color:#b00;font-size:14px;text-align:center;margin:10px 0;">Please verify your email to upgrade.</div>
+  <div id="debug-info" class="debug-info">Initializing...</div>
 
   <script>
-    // Initialize Firebase
+    function debugLog(message) {
+      console.log('[DEBUG]', message);
+      const debugDiv = document.getElementById('debug-info');
+      if (debugDiv) debugDiv.textContent = message;
+    }
+
     const firebaseConfig = {
       apiKey: "AIzaSyBalUFW0wm0qWnZ_LlFd0sECpaKav3YjaE",
       authDomain: "muse-mirror-bfc94.firebaseapp.com",
@@ -508,29 +243,50 @@
     };
 
     let firebaseApp, auth, db, stripe;
+    let firebaseInitialized = false;
     
-    if (firebaseConfig.apiKey) {
-      try {
-        if (!firebase.apps.length) {
-          firebaseApp = firebase.initializeApp(firebaseConfig);
-        } else {
-          firebaseApp = firebase.app();
+    function initializeFirebase() {
+      return new Promise((resolve, reject) => {
+        if (typeof firebase === 'undefined') {
+          debugLog('Firebase not loaded');
+          reject(new Error('Firebase not loaded'));
+          return;
         }
-        auth = firebase.auth();
-        db = firebase.firestore();
-        
-        db.settings({
-          ignoreUndefinedProperties: true,
-          experimentalForceLongPolling: true,
-          useFetchStreams: false
-        });
-        
-        stripe = Stripe('pk_test_51RKsC3RLBoNQf97bMRwplx9fLVOb9rOW0DW8DEXtdlJHidcFA68vvsJKGrJVil4Ug0VApK1Fk5QhQmVcSOCrjXwC00n3kZb0Ts');
-        
-        console.log("Firebase Firestore initialized successfully");
-      } catch (error) {
-        console.error("Firebase initialization error:", error);
-      }
+        try {
+          debugLog('Initializing Firebase...');
+          if (!firebase.apps.length) {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+          } else {
+            firebaseApp = firebase.app();
+          }
+          auth = firebase.auth();
+          db = firebase.firestore();
+          db.settings({
+            ignoreUndefinedProperties: true,
+            experimentalForceLongPolling: true,
+            useFetchStreams: false,
+            cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
+          });
+          db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+            debugLog('Persistence failed: ' + err.code);
+          });
+          stripe = Stripe('pk_test_51RKsC3RLBoNQf97bMRwplx9fLVOb9rOW0DW8DEXtdlJHidcFA68vvsJKGrJVil4Ug0VApK1Fk5QhQmVcSOCrjXwC00n3kZb0Ts');
+          debugLog('Firebase initialized successfully');
+          firebaseInitialized = true;
+          resolve();
+        } catch (error) {
+          debugLog('Firebase init error: ' + error.message);
+          reject(error);
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initializeFirebase, 500);
+      });
+    } else {
+      setTimeout(initializeFirebase, 500);
     }
 
     const hiddenInput = document.getElementById('hidden-input');
@@ -544,21 +300,11 @@
     const settingsPanel = document.getElementById('settings-panel');
     const limitMessage = document.getElementById('limit-message');
 
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
-    let canvasActivated = false;
-    let messageCount = 0;
-    let isSettingsOpen = false;
-    let currentUser = null;
-    let userExchangeCount = 0;
-    let isPremium = false;
-    let dailyLimit = 4;
-    let settingsVisible = false;
+    let isDrawing = false, lastX = 0, lastY = 0, canvasActivated = false;
+    let messageCount = 0, isSettingsOpen = false, currentUser = null;
+    let userExchangeCount = 0, isPremium = false, dailyLimit = 4, settingsVisible = false;
 
-    const fallbackResponses = [
-      "My reflections are caught somewhere between worlds. Try again soon."
-    ];
+    const fallbackResponses = ["My reflections are caught somewhere between worlds. Try again soon."];
 
     function focusInput() {
       if (messageCount < 8 && !isSettingsOpen) hiddenInput.focus();
@@ -569,36 +315,25 @@
       canvas.width = canvas.offsetWidth * dpr;
       canvas.height = canvas.offsetHeight * dpr;
       ctx.scale(dpr, dpr);
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#000';
     }
 
     function startDrawing(e) {
       isDrawing = true;
       const rect = canvas.getBoundingClientRect();
-      lastX = e.clientX - rect.left;
-      lastY = e.clientY - rect.top;
+      lastX = e.clientX - rect.left; lastY = e.clientY - rect.top;
       canvasContainer.classList.add('canvas-visible');
     }
 
     function draw(e) {
       if (!isDrawing) return;
       const rect = canvas.getBoundingClientRect();
-      const currentX = e.clientX - rect.left;
-      const currentY = e.clientY - rect.top;
-      ctx.beginPath();
-      ctx.moveTo(lastX, lastY);
-      ctx.lineTo(currentX, currentY);
-      ctx.stroke();
-      lastX = currentX;
-      lastY = currentY;
+      const currentX = e.clientX - rect.left; const currentY = e.clientY - rect.top;
+      ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(currentX, currentY); ctx.stroke();
+      lastX = currentX; lastY = currentY;
     }
 
-    function stopDrawing() {
-      isDrawing = false;
-    }
+    function stopDrawing() { isDrawing = false; }
     
     function toggleSettings() {
       isSettingsOpen = !isSettingsOpen;
@@ -612,9 +347,7 @@
 
     function showLimitMessage() {
       limitMessage.style.opacity = '1';
-      setTimeout(() => {
-        limitMessage.style.opacity = '0';
-      }, 5000);
+      setTimeout(() => { limitMessage.style.opacity = '0'; }, 5000);
     }
 
     function updateUsageUI() {
@@ -638,96 +371,74 @@
 
     function checkExchangeLimit() {
       if (!isPremium && userExchangeCount >= dailyLimit) {
-        showLimitMessage();
-        return true;
+        showLimitMessage(); return true;
       }
       return false;
     }
 
     function updateUserData() {
-      if (!auth || !currentUser) return;
-      
+      if (!auth || !currentUser || !firebaseInitialized) return;
       const today = new Date().toISOString().split('T')[0];
-      
       db.collection('users').doc(currentUser.uid).get().then((doc) => {
         if (doc.exists) {
           const userData = doc.data();
           isPremium = userData.premium || false;
-          
           if (userData.lastExchangeDate !== today) {
             userExchangeCount = 0;
           } else {
             userExchangeCount = userData.dailyExchanges || 0;
           }
-          
           updateUsageUI();
         } else {
           db.collection('users').doc(currentUser.uid).set({
-            email: currentUser.email,
-            premium: false,
-            dailyExchanges: 0,
-            lastExchangeDate: today
+            email: currentUser.email, premium: false, dailyExchanges: 0, lastExchangeDate: today
           });
-          isPremium = false;
-          userExchangeCount = 0;
-          updateUsageUI();
+          isPremium = false; userExchangeCount = 0; updateUsageUI();
         }
       }).catch((error) => {
-        console.error("Error getting user data:", error);
+        debugLog('Error getting user data: ' + error.message);
       });
     }
 
     function incrementUserExchangeCount() {
-      if (!auth || !currentUser) return;
-      
+      if (!auth || !currentUser || !firebaseInitialized) return;
       const today = new Date().toISOString().split('T')[0];
       userExchangeCount++;
-      
       db.collection('users').doc(currentUser.uid).update({
-        dailyExchanges: userExchangeCount,
-        lastExchangeDate: today
+        dailyExchanges: userExchangeCount, lastExchangeDate: today
       }).catch((error) => {
-        console.error("Error updating exchange count:", error);
+        debugLog('Error updating exchange count: ' + error.message);
       });
-      
       updateUsageUI();
     }
 
     function setupAuthListeners() {
-      if (!auth) return;
-      
+      if (!auth || !firebaseInitialized) {
+        debugLog('Auth not ready, retrying in 1s...');
+        setTimeout(setupAuthListeners, 1000);
+        return;
+      }
+      debugLog('Setting up auth listeners');
       auth.onAuthStateChanged((user) => {
         currentUser = user;
-        
+        debugLog('Auth state changed: ' + (user ? user.email : 'signed out'));
         const loginForm = document.getElementById('login-form');
         const signupForm = document.getElementById('signup-form');
         const userPanel = document.getElementById('user-panel');
-        
         if (user) {
-          loginForm.style.display = 'none';
-          signupForm.style.display = 'none';
-          userPanel.style.display = 'block';
-          
-          settingsDot.style.opacity = '1';
-          settingsVisible = true;
-          
-          localStorage.setItem('settingsDotShown', 'true');
-          
+          loginForm.style.display = 'none'; signupForm.style.display = 'none';
+          userPanel.style.display = 'block'; settingsDot.style.opacity = '1';
+          settingsVisible = true; localStorage.setItem('settingsDotShown', 'true');
           document.getElementById('user-email').textContent = user.email;
           updateUserData();
         } else {
-          loginForm.style.display = 'block';
-          signupForm.style.display = 'none';
+          loginForm.style.display = 'block'; signupForm.style.display = 'none';
           userPanel.style.display = 'none';
-          
           const dotShownBefore = localStorage.getItem('settingsDotShown') === 'true';
-          
           if (dotShownBefore) {
-            settingsDot.style.opacity = '1';
-            settingsVisible = true;
+            settingsDot.style.opacity = '1'; settingsVisible = true;
           } else if (messageCount < 8) {
-            settingsDot.style.opacity = '0';
-            settingsVisible = false;
+            settingsDot.style.opacity = '0'; settingsVisible = false;
           }
         }
       });
@@ -736,15 +447,11 @@
     function setupPlanSelection() {
       const freePlan = document.getElementById('free-plan');
       const premiumPlan = document.getElementById('premium-plan');
-      
       freePlan.addEventListener('click', () => {
-        freePlan.classList.add('selected');
-        premiumPlan.classList.remove('selected');
+        freePlan.classList.add('selected'); premiumPlan.classList.remove('selected');
       });
-      
       premiumPlan.addEventListener('click', () => {
-        premiumPlan.classList.add('selected');
-        freePlan.classList.remove('selected');
+        premiumPlan.classList.add('selected'); freePlan.classList.remove('selected');
       });
     }
 
@@ -758,36 +465,26 @@
         setTimeout(hideVerifyEmailMessage, 4000);
         return;
       }
-
       let isPremiumSelected = false;
       if (document.getElementById('user-panel').style.display === 'block') {
         isPremiumSelected = document.getElementById('user-premium-plan').classList.contains('selected');
       } else {
         isPremiumSelected = document.getElementById('premium-plan').classList.contains('selected');
       }
-
       if (isPremiumSelected) {
         showLoading();
         fetch('/api/create-checkout-session', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: currentUser.uid,
-            email: currentUser.email
-          }),
-        })
-        .then(response => response.json())
-        .then(session => {
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.uid, email: currentUser.email }),
+        }).then(response => response.json()).then(session => {
           hideLoading();
           if (!session.id) {
             alert('Failed to start checkout: No session ID returned. Please try again or contact support.');
             return;
           }
           return stripe.redirectToCheckout({ sessionId: session.id });
-        })
-        .catch(error => {
+        }).catch(error => {
           console.error('Error creating checkout session:', error);
           hideLoading();
           alert('Failed to start checkout. Please try again.');
@@ -797,128 +494,110 @@
       }
     }
 
+    async function attemptLogin(email, password, retryCount = 0) {
+      const maxRetries = 3;
+      try {
+        debugLog(`Login attempt ${retryCount + 1} for ${email}`);
+        if (!firebaseInitialized) {
+          debugLog('Waiting for Firebase...');
+          await initializeFirebase();
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        if (!auth) { throw new Error('Firebase Auth not available'); }
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        if (!user || !user.uid) { throw new Error('Invalid user credentials received'); }
+        debugLog('Login successful for ' + user.email);
+        try {
+          if (firebaseInitialized && db) {
+            await db.collection('users').doc(user.uid).update({
+              lastLogin: new Date().toISOString()
+            });
+          }
+        } catch (updateError) {
+          debugLog('Could not update last login: ' + updateError.message);
+        }
+        return user;
+      } catch (error) {
+        debugLog(`Login attempt ${retryCount + 1} failed: ${error.message}`);
+        if (retryCount < maxRetries) {
+          debugLog(`Retrying in 2 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          return attemptLogin(email, password, retryCount + 1);
+        }
+        throw error;
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-      // IMPROVED LOGIN FUNCTION WITH BETTER ERROR HANDLING
+      debugLog('DOM loaded, setting up event listeners');
+      
       document.getElementById('login-button').addEventListener('click', async () => {
         const email = document.getElementById('email-input').value.trim();
         const password = document.getElementById('password-input').value;
-        
+        debugLog(`Login button clicked for: ${email}`);
         if (!email || !password) {
           alert('Please enter both email and password');
           return;
         }
-        
-        if (!auth) {
-          alert('Authentication service not available. Please refresh the page and try again.');
-          return;
-        }
-
         try {
           showLoading();
-          
-          // Add a small delay to ensure Firebase is fully loaded
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          const userCredential = await auth.signInWithEmailAndPassword(email, password);
-          const user = userCredential.user;
-          
-          // Verify the user object is valid before proceeding
-          if (!user || !user.uid) {
-            throw new Error('Invalid user credentials received');
-          }
-          
-          // Update last login with error handling
-          try {
-            await db.collection('users').doc(user.uid).update({
-              lastLogin: new Date().toISOString()
-            });
-          } catch (updateError) {
-            console.warn('Could not update last login:', updateError);
-            // Don't fail the login for this
-          }
-          
+          const user = await attemptLogin(email, password);
           hideLoading();
           toggleSettings();
-          
+          debugLog('Login process completed successfully');
         } catch (error) {
-          console.error('Login error:', error);
+          debugLog('Final login error: ' + error.message);
           hideLoading();
-          
-          // Provide more helpful error messages
           let errorMessage = 'Login failed. ';
-          
           if (error.code) {
             switch (error.code) {
-              case 'auth/user-not-found':
-                errorMessage += 'No account found with this email.';
-                break;
-              case 'auth/wrong-password':
-                errorMessage += 'Incorrect password.';
-                break;
-              case 'auth/invalid-email':
-                errorMessage += 'Invalid email address.';
-                break;
-              case 'auth/network-request-failed':
-                errorMessage += 'Network error. Please check your connection and try again.';
-                break;
-              case 'auth/too-many-requests':
-                errorMessage += 'Too many failed attempts. Please wait and try again.';
-                break;
-              default:
-                errorMessage += 'Please try again or contact support.';
+              case 'auth/user-not-found': errorMessage += 'No account found with this email.'; break;
+              case 'auth/wrong-password': errorMessage += 'Incorrect password.'; break;
+              case 'auth/invalid-email': errorMessage += 'Invalid email address.'; break;
+              case 'auth/network-request-failed': errorMessage += 'Network error. Please check your connection and try again.'; break;
+              case 'auth/too-many-requests': errorMessage += 'Too many failed attempts. Please wait and try again.'; break;
+              default: errorMessage += `Error: ${error.code}. Please try again.`;
             }
           } else {
-            errorMessage += 'Please refresh the page and try again.';
+            errorMessage += 'Please check your connection and try again.';
           }
-          
           alert(errorMessage);
         }
       });
       
-      // IMPROVED SIGNUP FUNCTION
       document.getElementById('signup-button').addEventListener('click', async () => {
         const email = document.getElementById('signup-email').value.trim();
         const password = document.getElementById('signup-password').value;
-        
+        debugLog(`Signup button clicked for: ${email}`);
         if (!email || !password) {
           alert('Please enter both email and password');
           return;
         }
-
         if (password.length < 6) {
           alert('Password must be at least 6 characters long');
           return;
         }
-
-        if (!auth) {
-          alert('Authentication service not available. Please refresh the page and try again.');
-          return;
-        }
-
         try {
           showLoading();
-          
+          if (!firebaseInitialized) {
+            await initializeFirebase();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          if (!auth) { throw new Error('Firebase Auth not available'); }
           const userCredential = await auth.createUserWithEmailAndPassword(email, password);
           const user = userCredential.user;
           const today = new Date().toISOString().split('T')[0];
-          
-          // Verify the user object is valid
-          if (!user || !user.uid) {
-            throw new Error('Invalid user credentials received');
+          if (!user || !user.uid) { throw new Error('Invalid user credentials received'); }
+          debugLog('User created: ' + user.email);
+          if (firebaseInitialized && db) {
+            await db.collection('users').doc(user.uid).set({
+              email: user.email, premium: false, dailyExchanges: 0,
+              lastExchangeDate: today, createdAt: new Date().toISOString()
+            });
           }
-          
-          await db.collection('users').doc(user.uid).set({
-            email: user.email,
-            premium: false,
-            dailyExchanges: 0,
-            lastExchangeDate: today,
-            createdAt: new Date().toISOString()
-          });
-
           await user.sendEmailVerification();
           alert('Account created! Verification email sent. Please check your inbox.');
-
-          // Create Stripe customer with error handling
           try {
             await fetch('/api/create-stripe-customer', {
               method: 'POST',
@@ -926,39 +605,26 @@
               body: JSON.stringify({ userId: user.uid, email: user.email })
             });
           } catch (stripeError) {
-            console.warn('Stripe customer creation failed:', stripeError);
-            // Don't fail the signup for this
+            debugLog('Stripe customer creation failed: ' + stripeError.message);
           }
-
           hideLoading();
           toggleSettings();
-          
+          debugLog('Signup process completed successfully');
         } catch (error) {
-          console.error('Signup error:', error);
+          debugLog('Signup error: ' + error.message);
           hideLoading();
-          
           let errorMessage = 'Signup failed. ';
           if (error.code) {
             switch (error.code) {
-              case 'auth/email-already-in-use':
-                errorMessage += 'An account with this email already exists.';
-                break;
-              case 'auth/invalid-email':
-                errorMessage += 'Invalid email address.';
-                break;
-              case 'auth/weak-password':
-                errorMessage += 'Password is too weak.';
-                break;
-              case 'auth/network-request-failed':
-                errorMessage += 'Network error. Please check your connection and try again.';
-                break;
-              default:
-                errorMessage += 'Please try again or contact support.';
+              case 'auth/email-already-in-use': errorMessage += 'An account with this email already exists.'; break;
+              case 'auth/invalid-email': errorMessage += 'Invalid email address.'; break;
+              case 'auth/weak-password': errorMessage += 'Password is too weak.'; break;
+              case 'auth/network-request-failed': errorMessage += 'Network error. Please check your connection and try again.'; break;
+              default: errorMessage += `Error: ${error.code}. Please try again.`;
             }
           } else {
-            errorMessage += 'Please refresh the page and try again.';
+            errorMessage += 'Please check your connection and try again.';
           }
-          
           alert(errorMessage);
         }
       });
@@ -967,12 +633,10 @@
         if (auth) {
           showLoading();
           auth.signOut().then(() => {
-            hideLoading();
-            toggleSettings();
+            hideLoading(); toggleSettings(); debugLog('User signed out');
           }).catch((error) => {
-            console.error('Logout error:', error);
-            hideLoading();
-            alert('Logout failed. Please try again.');
+            debugLog('Logout error: ' + error.message);
+            hideLoading(); alert('Logout failed. Please try again.');
           });
         }
       });
@@ -994,24 +658,16 @@
       
       document.getElementById('manage-subscription').addEventListener('click', (event) => {
         event.preventDefault();
-        
         if (!currentUser || !currentUser.uid) {
           alert('User not logged in or UID missing!');
           return;
         }
-
         showLoading();
         fetch('/api/create-customer-portal-session', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: currentUser.uid
-          }),
-        })
-        .then(response => response.json())
-        .then(data => {
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.uid }),
+        }).then(response => response.json()).then(data => {
           hideLoading();
           if (data.url) {
             window.location.href = data.url;
@@ -1019,8 +675,7 @@
             console.error('Error:', data);
             alert('Error: ' + (data.error || 'Unknown error'));
           }
-        })
-        .catch(err => {
+        }).catch(err => {
           console.error('Fetch error:', err);
           alert('Fetch error. Check console.');
           hideLoading();
@@ -1028,29 +683,24 @@
       });
       
       setupPlanSelection();
-      setupAuthListeners();
+      setTimeout(setupAuthListeners, 1000);
     });
 
     window.onload = function () {
+      debugLog('Window loaded');
       focusInput();
       window.addEventListener('resize', () => {
-        if (canvasActivated) {
-          setupCanvas();
-        }
+        if (canvasActivated) { setupCanvas(); }
       });
-      
       document.addEventListener('click', (e) => {
-        if (isSettingsOpen && 
-            !settingsPanel.contains(e.target) && 
-            e.target !== settingsDot) {
+        if (isSettingsOpen && !settingsPanel.contains(e.target) && e.target !== settingsDot) {
           toggleSettings();
         }
       });
     };
 
     settingsDot.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleSettings();
+      e.stopPropagation(); toggleSettings();
     });
 
     document.addEventListener('click', (e) => {
@@ -1067,36 +717,24 @@
       if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
         e.preventDefault();
         if (messageCount >= 8) return;
-        
         if (checkExchangeLimit()) {
-          hiddenInput.value = '';
-          displayedText.textContent = '';
-          return;
+          hiddenInput.value = ''; displayedText.textContent = ''; return;
         }
-
         const userText = hiddenInput.value.trim();
         displayedText.classList.add('smooth-transition');
         const userItem = document.createElement('div');
         userItem.classList.add('conversation-item', 'user-text');
         userItem.textContent = userText;
         displayedText.style.opacity = '0';
-
         setTimeout(() => {
-          hiddenInput.value = '';
-          displayedText.textContent = '';
-          displayedText.style.opacity = '1';
-          conversation.prepend(userItem);
+          hiddenInput.value = ''; displayedText.textContent = '';
+          displayedText.style.opacity = '1'; conversation.prepend(userItem);
           messageCount++;
-
           if (messageCount >= 8 && !settingsVisible) {
-            settingsDot.style.opacity = '1';
-            settingsVisible = true;
+            settingsDot.style.opacity = '1'; settingsVisible = true;
           }
-          
           if (!canvasActivated) {
-            canvasContainer.style.display = 'block';
-            canvasActivated = true;
-            setupCanvas();
+            canvasContainer.style.display = 'block'; canvasActivated = true; setupCanvas();
             canvas.addEventListener('mousedown', startDrawing);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', stopDrawing);
@@ -1119,7 +757,6 @@
               canvas.dispatchEvent(new MouseEvent('mouseup'));
             });
           }
-
           setTimeout(async () => {
             let responseText;
             try {
@@ -1133,28 +770,21 @@
             } catch (error) {
               responseText = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
             }
-
             const responseItem = document.createElement('div');
             responseItem.classList.add('conversation-item', 'response-text');
             responseItem.textContent = responseText;
             conversation.prepend(responseItem);
             messageCount++;
-            
-            if (currentUser) {
-              incrementUserExchangeCount();
-            }
-
+            if (currentUser) { incrementUserExchangeCount(); }
             if (messageCount >= 8) {
               setTimeout(() => {
                 const currentOpacity = window.getComputedStyle(cursor).opacity;
-                cursor.style.opacity = currentOpacity;
-                cursor.style.animation = 'none';
+                cursor.style.opacity = currentOpacity; cursor.style.animation = 'none';
                 requestAnimationFrame(() => {
                   cursor.style.transition = 'opacity 5s ease-out';
                   cursor.style.opacity = '0';
                 });
-                hiddenInput.disabled = true;
-                hiddenInput.blur();
+                hiddenInput.disabled = true; hiddenInput.blur();
               }, 2000);
             }
           }, 500);
@@ -1164,18 +794,19 @@
     
     setTimeout(() => {
       if (!settingsVisible) {
-        settingsDot.style.opacity = '1';
-        settingsVisible = true;
+        settingsDot.style.opacity = '1'; settingsVisible = true;
       }
     }, 60000);
 
-    firebase.firestore().collection("testCollection").get()
-      .then((snapshot) => {
-        console.log("✅ SUCCESSFUL CONNECTION TO FIRESTORE:", snapshot.docs.length);
-      })
-      .catch((error) => {
-        console.error("🚩 SIMPLE TEST ERROR:", error);
-      });
+    setTimeout(() => {
+      if (firebaseInitialized && db) {
+        db.collection("testCollection").get().then((snapshot) => {
+          debugLog(`✅ Firestore connected: ${snapshot.docs.length} docs`);
+        }).catch((error) => {
+          debugLog(`🚩 Firestore test error: ${error.message}`);
+        });
+      }
+    }, 2000);
 
     function showLoading() {
       document.getElementById('loading-overlay').style.display = 'flex';
@@ -1213,7 +844,7 @@
     }
 
     if (window.location.pathname === '/success') {
-      document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#fff;"><div style="font-size:22px;font-weight:400;margin-bottom:18px;">Thank you for upgrading!</div><div style="font-size:16px;color:#666;margin-bottom:32px;">Your payment was successful.<br>Your premium access will be available shortly.</div><button onclick=\"window.location.href='/'\" style="padding:10px 28px;font-size:16px;border-radius:6px;border:1px solid #eee;background:#fafafa;color:#333;cursor:pointer;transition:background 0.2s;">Return to Muse Mirror</button></div>`;
+      document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#fff;"><div style="font-size:22px;font-weight:400;margin-bottom:18px;">Thank you for upgrading!</div><div style="font-size:16px;color:#666;margin-bottom:32px;">Your payment was successful.<br>Your premium access will be available shortly.</div><button onclick="window.location.href='/'" style="padding:10px 28px;font-size:16px;border-radius:6px;border:1px solid #eee;background:#fafafa;color:#333;cursor:pointer;transition:background 0.2s;">Return to Muse Mirror</button></div>`;
     }
   </script>
 </body>
