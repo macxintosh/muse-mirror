@@ -74,7 +74,7 @@
       -webkit-transform: translateZ(0); transform: translateZ(0);
     }
     #settings-dot {
-      position: absolute; top: 20px; right: 20px; 
+      position: absolute; top: 10px; right: 10px; 
       width: 44px; height: 44px; /* Much larger clickable area for mobile */
       cursor: pointer; opacity: 0;
       transition: opacity 0.5s ease, transform 0.3s ease; z-index: 100;
@@ -84,6 +84,13 @@
       /* Remove the background from the main element */
       background: none;
       border-radius: 0;
+      /* Remove tap highlight on mobile */
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
     
     /* Create three dots using pseudo-elements and box-shadow */
@@ -108,8 +115,8 @@
       #settings-dot {
         width: 60px; 
         height: 60px;
-        top: 15px; 
-        right: 15px;
+        top: 5px; 
+        right: 5px;
       }
     }
     #settings-panel {
