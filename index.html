@@ -475,22 +475,27 @@
           debugLog('Setting up Firestore onSnapshot for UID: ' + user.uid);
           if (userDocUnsubscribe) userDocUnsubscribe();
           userDocUnsubscribe = db.collection('users').doc(user.uid).onSnapshot((doc) => {
-            if (doc.exists) {
-              const userData = doc.data();
-              console.log('User doc snapshot:', userData);
-              isPremium = userData.premium || false;
-              console.log('isPremium:', isPremium);
-              const today = new Date().toISOString().split('T')[0];
-              if (userData.lastExchangeDate !== today) {
-                userExchangeCount = 0;
+            try {
+              console.log('onSnapshot callback fired'); // Debug log
+              if (doc.exists) {
+                const userData = doc.data();
+                console.log('User doc snapshot:', userData);
+                isPremium = userData.premium || false;
+                console.log('isPremium:', isPremium);
+                const today = new Date().toISOString().split('T')[0];
+                if (userData.lastExchangeDate !== today) {
+                  userExchangeCount = 0;
+                } else {
+                  userExchangeCount = userData.dailyExchanges || 0;
+                }
+                console.log('userExchangeCount:', userExchangeCount);
+                updateUsageUI();
+                hideLoading();
               } else {
-                userExchangeCount = userData.dailyExchanges || 0;
+                console.log('User doc does not exist for UID:', user.uid);
               }
-              console.log('userExchangeCount:', userExchangeCount);
-              updateUsageUI();
-              hideLoading();
-            } else {
-              console.log('User doc does not exist for UID:', user.uid);
+            } catch (err) {
+              console.error('Error in onSnapshot callback:', err);
             }
           });
         } else {
