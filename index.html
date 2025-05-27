@@ -472,23 +472,25 @@
           userPanel.style.display = 'block'; settingsDot.style.opacity = '1';
           settingsVisible = true; localStorage.setItem('settingsDotShown', 'true');
           document.getElementById('user-email').textContent = user.email;
+          debugLog('Setting up Firestore onSnapshot for UID: ' + user.uid);
           if (userDocUnsubscribe) userDocUnsubscribe();
           userDocUnsubscribe = db.collection('users').doc(user.uid).onSnapshot((doc) => {
             if (doc.exists) {
               const userData = doc.data();
-              console.log('User doc snapshot:', userData); // Debug log
+              console.log('User doc snapshot:', userData);
               isPremium = userData.premium || false;
-              console.log('isPremium:', isPremium); // Debug log
+              console.log('isPremium:', isPremium);
               const today = new Date().toISOString().split('T')[0];
               if (userData.lastExchangeDate !== today) {
                 userExchangeCount = 0;
               } else {
                 userExchangeCount = userData.dailyExchanges || 0;
               }
-              console.log('userExchangeCount:', userExchangeCount); // Debug log
+              console.log('userExchangeCount:', userExchangeCount);
               updateUsageUI();
+              hideLoading();
             } else {
-              console.log('User doc does not exist for UID:', user.uid); // Debug log
+              console.log('User doc does not exist for UID:', user.uid);
             }
           });
         } else {
