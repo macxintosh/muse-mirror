@@ -463,6 +463,7 @@
       auth.onAuthStateChanged((user) => {
         currentUser = user;
         debugLog('Auth state changed: ' + (user ? user.email : 'signed out'));
+        debugLog('Current user UID: ' + (user ? user.uid : 'none'));
         const loginForm = document.getElementById('login-form');
         const signupForm = document.getElementById('signup-form');
         const userPanel = document.getElementById('user-panel');
@@ -475,14 +476,19 @@
           userDocUnsubscribe = db.collection('users').doc(user.uid).onSnapshot((doc) => {
             if (doc.exists) {
               const userData = doc.data();
+              console.log('User doc snapshot:', userData); // Debug log
               isPremium = userData.premium || false;
+              console.log('isPremium:', isPremium); // Debug log
               const today = new Date().toISOString().split('T')[0];
               if (userData.lastExchangeDate !== today) {
                 userExchangeCount = 0;
               } else {
                 userExchangeCount = userData.dailyExchanges || 0;
               }
+              console.log('userExchangeCount:', userExchangeCount); // Debug log
               updateUsageUI();
+            } else {
+              console.log('User doc does not exist for UID:', user.uid); // Debug log
             }
           });
         } else {
