@@ -459,6 +459,7 @@
         return;
       }
       debugLog('Setting up auth listeners');
+      let userDocUnsubscribe = null;
       auth.onAuthStateChanged((user) => {
         currentUser = user;
         debugLog('Auth state changed: ' + (user ? user.email : 'signed out'));
@@ -470,7 +471,20 @@
           userPanel.style.display = 'block'; settingsDot.style.opacity = '1';
           settingsVisible = true; localStorage.setItem('settingsDotShown', 'true');
           document.getElementById('user-email').textContent = user.email;
-          updateUserData();
+          if (userDocUnsubscribe) userDocUnsubscribe();
+          userDocUnsubscribe = db.collection('users').doc(user.uid).onSnapshot((doc) => {
+            if (doc.exists) {
+              const userData = doc.data();
+              isPremium = userData.premium || false;
+              const today = new Date().toISOString().split('T')[0];
+              if (userData.lastExchangeDate !== today) {
+                userExchangeCount = 0;
+              } else {
+                userExchangeCount = userData.dailyExchanges || 0;
+              }
+              updateUsageUI();
+            }
+          });
         } else {
           loginForm.style.display = 'block'; signupForm.style.display = 'none';
           userPanel.style.display = 'none';
@@ -480,6 +494,7 @@
           } else if (messageCount < 8) {
             settingsDot.style.opacity = '0'; settingsVisible = false;
           }
+          if (userDocUnsubscribe) { userDocUnsubscribe(); userDocUnsubscribe = null; }
         }
       });
     }
