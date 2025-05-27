@@ -31,6 +31,19 @@ module.exports = async function handler(req, res) {
   const { db } = getFirebaseAdmin();
   const usersRef = db.collection('users');
 
+  // Add a helper for retrying Firestore set operations
+  async function safeSet(docRef, data, options, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await docRef.set(data, options);
+        return;
+      } catch (err) {
+        if (i === retries - 1) throw err;
+        await new Promise(res => setTimeout(res, 500 * (i + 1)));
+      }
+    }
+  }
+
   async function updatePremiumStatus(customerId, isPremium, status) {
     const snapshot = await usersRef.where('stripeCustomerId', '==', customerId).get();
 
@@ -52,7 +65,7 @@ module.exports = async function handler(req, res) {
         updateData.checkoutStatus = 'completed';
       }
 
-      await usersRef.doc(doc.id).set(updateData, { merge: true });
+      await safeSet(usersRef.doc(doc.id), updateData, { merge: true });
       console.log(`✅ User ${doc.id} premium status updated: ${isPremium}, status: ${status}`);
     });
   }
@@ -76,7 +89,7 @@ module.exports = async function handler(req, res) {
         premiumSince: new Date().toISOString()
       };
 
-      await usersRef.doc(userIdCheckout).set(updateData, { merge: true });
+      await safeSet(usersRef.doc(userIdCheckout), updateData, { merge: true });
       console.log(`✅ User ${userIdCheckout} upgraded to premium (checkout)`);
       break;
     }
@@ -86,7 +99,7 @@ module.exports = async function handler(req, res) {
       const userId = paymentIntent.metadata?.userId;
 
       if (userId) {
-        await usersRef.doc(userId).set({
+        await safeSet(usersRef.doc(userId), {
           paymentStatus: 'succeeded',
           paymentDate: new Date().toISOString(),
           lastPaymentIntent: paymentIntent.id
@@ -101,7 +114,7 @@ module.exports = async function handler(req, res) {
       const userId = paymentIntent.metadata?.userId;
 
       if (userId) {
-        await usersRef.doc(userId).set({
+        await safeSet(usersRef.doc(userId), {
           paymentStatus: 'failed',
           paymentError: paymentIntent.last_payment_error?.message || 'Unknown error',
           lastPaymentIntent: paymentIntent.id
