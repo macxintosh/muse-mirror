@@ -281,6 +281,9 @@
           (tier === 'free' && dailyExchanges >= EXCHANGES.free)) {
         settingsIcon.style.display = 'block';
       }
+      setTimeout(() => {
+        focusInput();
+      }, 500);
     }
 
     // --- DOMContentLoaded/Onload Handler ---
@@ -347,11 +350,13 @@
           await fetchProfile();
           hideAuthModal();
           updateTierUI();
+          focusInput();
         } else {
           user = null;
           profile = null;
           tier = 'anonymous';
           updateTierUI();
+          focusInput();
         }
       });
 
@@ -361,11 +366,13 @@
         user = session.user;
         await fetchProfile();
         updateTierUI();
+        focusInput();
       } else {
         user = null;
         profile = null;
         tier = 'anonymous';
         updateTierUI();
+        focusInput();
       }
 
       // Settings icon click
@@ -539,7 +546,12 @@
     }
 
     function focusInput() {
-      if (messageCount < 8) hiddenInput.focus();
+      if (canSendMessage()) {
+        hiddenInput.disabled = false;
+        hiddenInput.focus();
+      } else {
+        hiddenInput.disabled = true;
+      }
     }
 
     function setupCanvas() {
