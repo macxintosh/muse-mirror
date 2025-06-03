@@ -152,12 +152,53 @@
       <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
     </div>
   </div>
+  <div id="settings-icon" style="display:none; position:fixed; top:24px; right:24px; z-index:10; cursor:pointer;">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3.5"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09c0 .66.39 1.26 1 1.51a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09c.22.61.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09c-.66 0-1.26.39-1.51 1z"/>
+    </svg>
+  </div>
+  <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.96); z-index:100; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:10px; box-shadow:0 2px 16px rgba(0,0,0,0.07); padding:32px 24px; min-width:260px; max-width:90vw; display:flex; flex-direction:column; align-items:center;">
+      <div id="auth-modal-content">
+        <h2 style="font-size:1.1em; font-weight:400; margin-bottom:18px; color:#222;">Sign in to continue</h2>
+        <input id="auth-email" type="email" placeholder="your@email.com" style="font-size:1em; padding:8px 12px; border:1px solid #ddd; border-radius:5px; outline:none; margin-bottom:12px; width:100%;" />
+        <button id="auth-send-link" style="font-size:1em; padding:8px 0; border:none; background:#222; color:white; border-radius:5px; width:100%; cursor:pointer;">Send magic link</button>
+        <div id="auth-message" style="margin-top:12px; font-size:0.95em; color:#444; min-height:1.2em;"></div>
+      </div>
+      <button id="auth-close" style="margin-top:18px; background:none; border:none; color:#888; font-size:0.95em; cursor:pointer;">Cancel</button>
+    </div>
+  </div>
   <div id="canvas-container">
     <canvas id="drawing-canvas"></canvas>
     <div id="canvas-gradient"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    const supabaseUrl = 'https://grtbltrjiluriwfjcfva.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdydGJsdHJqaWx1cml3ZmpjZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg5NzUzNTAsImV4cCI6MjA2NDU1MTM1MH0.wfPdmrheZ45DPAJqYoO0v8yFnMrt4eX5w6g4EzhBPB4';
+    const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+    // --- User State ---
+    let user = null;
+    let profile = null;
+    let dailyExchanges = 0;
+    let tier = 'anonymous';
+    let lastExchangeDate = null;
+    let localExchanges = 0;
+    let localLastDate = null;
+    const EXCHANGES = { anonymous: 1, free: 3, premium: 40 };
+    const MESSAGES_PER_EXCHANGE = 8;
+
+    // --- DOM ---
+    const settingsIcon = document.getElementById('settings-icon');
+    const authModal = document.getElementById('auth-modal');
+    const authEmail = document.getElementById('auth-email');
+    const authSendLink = document.getElementById('auth-send-link');
+    const authMessage = document.getElementById('auth-message');
+    const authClose = document.getElementById('auth-close');
+
     const hiddenInput = document.getElementById('hidden-input');
     const displayedText = document.getElementById('displayed-text');
     const conversation = document.getElementById('conversation');
@@ -235,10 +276,147 @@
       displayedText.textContent = hiddenInput.value;
     });
 
+    // --- Local Storage for Anonymous ---
+    function getToday() {
+      const now = new Date();
+      return now.toISOString().slice(0,10);
+    }
+    function loadLocalExchanges() {
+      localExchanges = parseInt(localStorage.getItem('mm_localExchanges')||'0',10);
+      localLastDate = localStorage.getItem('mm_localLastDate')||getToday();
+      if (localLastDate !== getToday()) {
+        localExchanges = 0;
+        localLastDate = getToday();
+        localStorage.setItem('mm_localExchanges', '0');
+        localStorage.setItem('mm_localLastDate', localLastDate);
+      }
+    }
+    function incLocalExchanges() {
+      localExchanges++;
+      localStorage.setItem('mm_localExchanges', localExchanges);
+      localStorage.setItem('mm_localLastDate', getToday());
+    }
+
+    // --- Auth Modal Logic ---
+    function showAuthModal() {
+      authModal.style.display = 'flex';
+      authEmail.value = '';
+      authMessage.textContent = '';
+      authEmail.focus();
+    }
+    function hideAuthModal() {
+      authModal.style.display = 'none';
+    }
+    authClose.onclick = hideAuthModal;
+    authModal.onclick = (e) => { if (e.target === authModal) hideAuthModal(); };
+
+    authSendLink.onclick = async () => {
+      const email = authEmail.value.trim();
+      if (!email) { authMessage.textContent = 'Enter your email.'; return; }
+      authSendLink.disabled = true;
+      authMessage.textContent = 'Sending magic link...';
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (error) {
+        authMessage.textContent = 'Error: ' + error.message;
+      } else {
+        authMessage.textContent = 'Check your email for the link.';
+      }
+      authSendLink.disabled = false;
+    };
+
+    // --- Auth State Change ---
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session && session.user) {
+        user = session.user;
+        await fetchProfile();
+        hideAuthModal();
+        updateTierUI();
+      } else {
+        user = null;
+        profile = null;
+        tier = 'anonymous';
+        updateTierUI();
+      }
+    });
+
+    // --- Fetch Profile ---
+    async function fetchProfile() {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (data) {
+        profile = data;
+        tier = data.tier;
+        dailyExchanges = data.daily_exchanges || 0;
+        lastExchangeDate = data.last_exchange_date;
+        // Daily reset
+        if (lastExchangeDate !== getToday()) {
+          await supabase.from('profiles').update({ daily_exchanges: 0, last_exchange_date: getToday() }).eq('id', user.id);
+          dailyExchanges = 0;
+        }
+      } else {
+        tier = 'free';
+        dailyExchanges = 0;
+      }
+    }
+
+    // --- Update Profile Exchange Count ---
+    async function incProfileExchanges() {
+      dailyExchanges++;
+      await supabase.from('profiles').update({ daily_exchanges: dailyExchanges, last_exchange_date: getToday() }).eq('id', user.id);
+    }
+
+    // --- UI Tier State ---
+    function updateTierUI() {
+      // Optionally update UI for tier (not intrusive)
+    }
+
+    // --- Settings Icon Click ---
+    settingsIcon.onclick = () => {
+      if (tier === 'anonymous') showAuthModal();
+      // else show account info or upgrade if needed
+    };
+
+    // --- Exchange Tracking ---
+    loadLocalExchanges();
+    let exchangeCount = 0;
+    let currentExchangeMessages = 0;
+    let maxExchanges = EXCHANGES[tier];
+    let maxMessages = maxExchanges * MESSAGES_PER_EXCHANGE;
+
+    function resetSessionCounters() {
+      exchangeCount = 0;
+      currentExchangeMessages = 0;
+      messageCount = 0;
+    }
+
+    function canSendMessage() {
+      if (tier === 'anonymous') {
+        return localExchanges < EXCHANGES.anonymous && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
+      } else if (tier === 'free') {
+        return dailyExchanges < EXCHANGES.free && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
+      } else if (tier === 'premium') {
+        return dailyExchanges < EXCHANGES.premium && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
+      }
+      return false;
+    }
+
+    function onExchangeEnd() {
+      currentExchangeMessages = 0;
+      exchangeCount++;
+      if (tier === 'anonymous') {
+        incLocalExchanges();
+      } else {
+        incProfileExchanges();
+      }
+      if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
+          (tier === 'free' && dailyExchanges >= EXCHANGES.free)) {
+        settingsIcon.style.display = 'block';
+      }
+    }
+
     hiddenInput.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
         e.preventDefault();
-        if (messageCount >= 8) return;
+        if (!canSendMessage()) return;
 
         const userText = hiddenInput.value.trim();
         displayedText.classList.add('smooth-transition');
@@ -253,6 +431,7 @@
           displayedText.style.opacity = '1';
           conversation.prepend(userItem);
           messageCount++;
+          currentExchangeMessages++;
 
           if (!canvasActivated) {
             canvasContainer.style.display = 'block';
@@ -300,8 +479,9 @@
             responseItem.textContent = responseText;
             conversation.prepend(responseItem);
             messageCount++;
+            currentExchangeMessages++;
 
-            if (messageCount >= 8) {
+            if (currentExchangeMessages >= MESSAGES_PER_EXCHANGE) {
               setTimeout(() => {
                 const currentOpacity = window.getComputedStyle(cursor).opacity;
                 cursor.style.opacity = currentOpacity;
@@ -312,7 +492,12 @@
                 });
                 hiddenInput.disabled = true;
                 hiddenInput.blur();
+                onExchangeEnd();
               }, 2000);
+            }
+
+            if (!canSendMessage()) {
+              settingsIcon.style.display = 'block';
             }
           }, 500);
         }, 500);
