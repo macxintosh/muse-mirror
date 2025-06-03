@@ -309,6 +309,13 @@
       accountLogout = document.getElementById('account-logout');
       accountClose = document.getElementById('account-close');
 
+      // Exchange tracking - ensure order
+      loadLocalExchanges();
+      resetSessionCounters();
+
+      // Debug logs for anonymous state
+      console.log('[MuseMirror] On load: localExchanges =', localExchanges, 'currentExchangeMessages =', currentExchangeMessages, 'canSendMessage =', canSendMessage());
+
       // Auth modal events
       authClose.onclick = hideAuthModal;
       authModal.onclick = (e) => { if (e.target === authModal) hideAuthModal(); };
@@ -393,10 +400,6 @@
           }
         }
       };
-
-      // Exchange tracking
-      loadLocalExchanges();
-      resetSessionCounters();
 
       // Input focus
       focusInput();
