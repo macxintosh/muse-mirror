@@ -178,7 +178,7 @@
   <script>
     const supabaseUrl = 'https://grtbltrjiluriwfjcfva.supabase.co';
     const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdydGJsdHJqaWx1cml3ZmpjZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg5NzUzNTAsImV4cCI6MjA2NDU1MTM1MH0.wfPdmrheZ45DPAJqYoO0v8yFnMrt4eX5w6g4EzhBPB4';
-    const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
     // --- User State ---
     let user = null;
