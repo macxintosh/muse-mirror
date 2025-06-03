@@ -169,6 +169,18 @@
       <button id="auth-close" style="margin-top:18px; background:none; border:none; color:#888; font-size:0.95em; cursor:pointer;">Cancel</button>
     </div>
   </div>
+  <div id="account-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.96); z-index:100; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:10px; box-shadow:0 2px 16px rgba(0,0,0,0.07); padding:32px 24px; min-width:260px; max-width:90vw; display:flex; flex-direction:column; align-items:center;">
+      <div id="account-modal-content">
+        <h2 style="font-size:1.1em; font-weight:400; margin-bottom:18px; color:#222;">Account</h2>
+        <div id="account-email" style="font-size:1em; color:#333; margin-bottom:8px;"></div>
+        <div id="account-tier" style="font-size:0.98em; color:#666; margin-bottom:16px;"></div>
+        <button id="account-upgrade" style="display:none; font-size:1em; padding:8px 0; border:none; background:#222; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Upgrade to Premium</button>
+        <button id="account-logout" style="font-size:0.95em; padding:6px 0; border:none; background:#eee; color:#444; border-radius:5px; width:100%; cursor:pointer;">Log out</button>
+      </div>
+      <button id="account-close" style="margin-top:18px; background:none; border:none; color:#888; font-size:0.95em; cursor:pointer;">Close</button>
+    </div>
+  </div>
   <div id="canvas-container">
     <canvas id="drawing-canvas"></canvas>
     <div id="canvas-gradient"></div>
@@ -201,6 +213,7 @@
     // --- DOM references ---
     let settingsIcon, authModal, authEmail, authSendLink, authMessage, authClose;
     let hiddenInput, displayedText, conversation, cursor, canvasContainer, canvas, ctx;
+    let accountModal, accountEmail, accountTier, accountUpgrade, accountLogout, accountClose;
 
     const fallbackResponses = [
       "My reflections are caught somewhere between worlds. Try again soon."
@@ -271,7 +284,7 @@
     }
 
     // --- DOMContentLoaded/Onload Handler ---
-    window.onload = function () {
+    window.onload = async function () {
       // DOM references
       settingsIcon = document.getElementById('settings-icon');
       authModal = document.getElementById('auth-modal');
@@ -286,6 +299,12 @@
       canvasContainer = document.getElementById('canvas-container');
       canvas = document.getElementById('drawing-canvas');
       ctx = canvas.getContext('2d');
+      accountModal = document.getElementById('account-modal');
+      accountEmail = document.getElementById('account-email');
+      accountTier = document.getElementById('account-tier');
+      accountUpgrade = document.getElementById('account-upgrade');
+      accountLogout = document.getElementById('account-logout');
+      accountClose = document.getElementById('account-close');
 
       // Auth modal events
       authClose.onclick = hideAuthModal;
@@ -304,6 +323,23 @@
         authSendLink.disabled = false;
       };
 
+      // Account modal events
+      accountClose.onclick = () => { accountModal.style.display = 'none'; };
+      accountModal.onclick = (e) => { if (e.target === accountModal) accountModal.style.display = 'none'; };
+      accountLogout.onclick = async () => {
+        await supabase.auth.signOut();
+        accountModal.style.display = 'none';
+        // Reset to anonymous state
+        user = null;
+        profile = null;
+        tier = 'anonymous';
+        updateTierUI();
+      };
+      accountUpgrade.onclick = () => {
+        // Placeholder: Integrate Stripe here
+        alert('Upgrade to premium coming soon.');
+      };
+
       // Auth state change
       supabase.auth.onAuthStateChange(async (event, session) => {
         if (session && session.user) {
@@ -319,10 +355,36 @@
         }
       });
 
+      // On load, check for existing session (magic link or previous login)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user) {
+        user = session.user;
+        await fetchProfile();
+        updateTierUI();
+      } else {
+        user = null;
+        profile = null;
+        tier = 'anonymous';
+        updateTierUI();
+      }
+
       // Settings icon click
       settingsIcon.onclick = () => {
-        if (tier === 'anonymous') showAuthModal();
-        // else show account info or upgrade if needed
+        if (tier === 'anonymous') {
+          showAuthModal();
+        } else {
+          // Show account modal for authenticated users
+          if (user) {
+            accountEmail.textContent = user.email || '';
+            accountTier.textContent = tier.charAt(0).toUpperCase() + tier.slice(1) + ' account';
+            if (tier === 'free') {
+              accountUpgrade.style.display = 'block';
+            } else {
+              accountUpgrade.style.display = 'none';
+            }
+            accountModal.style.display = 'flex';
+          }
+        }
       };
 
       // Exchange tracking
@@ -464,7 +526,16 @@
 
     // --- UI Tier State ---
     function updateTierUI() {
-      // Optionally update UI for tier (not intrusive)
+      // Show/hide settings icon for authenticated users at/over their limit
+      if (tier === 'free' && dailyExchanges >= EXCHANGES.free) {
+        settingsIcon.style.display = 'block';
+      } else if (tier === 'premium' && dailyExchanges >= EXCHANGES.premium) {
+        settingsIcon.style.display = 'block';
+      } else if (tier !== 'anonymous') {
+        settingsIcon.style.display = 'block';
+      } else {
+        settingsIcon.style.display = 'none';
+      }
     }
 
     function focusInput() {
