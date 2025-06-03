@@ -190,32 +190,282 @@
     let localLastDate = null;
     const EXCHANGES = { anonymous: 1, free: 3, premium: 40 };
     const MESSAGES_PER_EXCHANGE = 8;
-
-    // --- DOM ---
-    const settingsIcon = document.getElementById('settings-icon');
-    const authModal = document.getElementById('auth-modal');
-    const authEmail = document.getElementById('auth-email');
-    const authSendLink = document.getElementById('auth-send-link');
-    const authMessage = document.getElementById('auth-message');
-    const authClose = document.getElementById('auth-close');
-
-    const hiddenInput = document.getElementById('hidden-input');
-    const displayedText = document.getElementById('displayed-text');
-    const conversation = document.getElementById('conversation');
-    const cursor = document.getElementById('cursor');
-    const canvasContainer = document.getElementById('canvas-container');
-    const canvas = document.getElementById('drawing-canvas');
-    const ctx = canvas.getContext('2d');
-
     let isDrawing = false;
     let lastX = 0;
     let lastY = 0;
     let canvasActivated = false;
     let messageCount = 0;
+    let exchangeCount = 0;
+    let currentExchangeMessages = 0;
+
+    // --- DOM references ---
+    let settingsIcon, authModal, authEmail, authSendLink, authMessage, authClose;
+    let hiddenInput, displayedText, conversation, cursor, canvasContainer, canvas, ctx;
 
     const fallbackResponses = [
       "My reflections are caught somewhere between worlds. Try again soon."
     ];
+
+    // --- Local Storage for Anonymous ---
+    function getToday() {
+      const now = new Date();
+      return now.toISOString().slice(0,10);
+    }
+    function loadLocalExchanges() {
+      localExchanges = parseInt(localStorage.getItem('mm_localExchanges')||'0',10);
+      localLastDate = localStorage.getItem('mm_localLastDate')||getToday();
+      if (localLastDate !== getToday()) {
+        localExchanges = 0;
+        localLastDate = getToday();
+        localStorage.setItem('mm_localExchanges', '0');
+        localStorage.setItem('mm_localLastDate', localLastDate);
+      }
+    }
+    function incLocalExchanges() {
+      localExchanges++;
+      localStorage.setItem('mm_localExchanges', localExchanges);
+      localStorage.setItem('mm_localLastDate', getToday());
+    }
+
+    // --- Auth Modal Logic ---
+    function showAuthModal() {
+      authModal.style.display = 'flex';
+      authEmail.value = '';
+      authMessage.textContent = '';
+      authEmail.focus();
+    }
+    function hideAuthModal() {
+      authModal.style.display = 'none';
+    }
+
+    // --- Exchange Tracking ---
+    function resetSessionCounters() {
+      exchangeCount = 0;
+      currentExchangeMessages = 0;
+      messageCount = 0;
+    }
+
+    function canSendMessage() {
+      if (tier === 'anonymous') {
+        return localExchanges < EXCHANGES.anonymous && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
+      } else if (tier === 'free') {
+        return dailyExchanges < EXCHANGES.free && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
+      } else if (tier === 'premium') {
+        return dailyExchanges < EXCHANGES.premium && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
+      }
+      return false;
+    }
+
+    function onExchangeEnd() {
+      currentExchangeMessages = 0;
+      exchangeCount++;
+      if (tier === 'anonymous') {
+        incLocalExchanges();
+      } else {
+        incProfileExchanges();
+      }
+      if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
+          (tier === 'free' && dailyExchanges >= EXCHANGES.free)) {
+        settingsIcon.style.display = 'block';
+      }
+    }
+
+    // --- DOMContentLoaded/Onload Handler ---
+    window.onload = function () {
+      // DOM references
+      settingsIcon = document.getElementById('settings-icon');
+      authModal = document.getElementById('auth-modal');
+      authEmail = document.getElementById('auth-email');
+      authSendLink = document.getElementById('auth-send-link');
+      authMessage = document.getElementById('auth-message');
+      authClose = document.getElementById('auth-close');
+      hiddenInput = document.getElementById('hidden-input');
+      displayedText = document.getElementById('displayed-text');
+      conversation = document.getElementById('conversation');
+      cursor = document.getElementById('cursor');
+      canvasContainer = document.getElementById('canvas-container');
+      canvas = document.getElementById('drawing-canvas');
+      ctx = canvas.getContext('2d');
+
+      // Auth modal events
+      authClose.onclick = hideAuthModal;
+      authModal.onclick = (e) => { if (e.target === authModal) hideAuthModal(); };
+      authSendLink.onclick = async () => {
+        const email = authEmail.value.trim();
+        if (!email) { authMessage.textContent = 'Enter your email.'; return; }
+        authSendLink.disabled = true;
+        authMessage.textContent = 'Sending magic link...';
+        const { error } = await supabase.auth.signInWithOtp({ email });
+        if (error) {
+          authMessage.textContent = 'Error: ' + error.message;
+        } else {
+          authMessage.textContent = 'Check your email for the link.';
+        }
+        authSendLink.disabled = false;
+      };
+
+      // Auth state change
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session && session.user) {
+          user = session.user;
+          await fetchProfile();
+          hideAuthModal();
+          updateTierUI();
+        } else {
+          user = null;
+          profile = null;
+          tier = 'anonymous';
+          updateTierUI();
+        }
+      });
+
+      // Settings icon click
+      settingsIcon.onclick = () => {
+        if (tier === 'anonymous') showAuthModal();
+        // else show account info or upgrade if needed
+      };
+
+      // Exchange tracking
+      loadLocalExchanges();
+      resetSessionCounters();
+
+      // Input focus
+      focusInput();
+      window.addEventListener('resize', () => {
+        if (canvasActivated) {
+          setupCanvas();
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (e.target !== canvas) focusInput();
+      });
+      document.getElementById('input-line').addEventListener('click', focusInput);
+      hiddenInput.addEventListener('input', () => {
+        displayedText.textContent = hiddenInput.value;
+      });
+
+      hiddenInput.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
+          e.preventDefault();
+          if (!canSendMessage()) return;
+
+          const userText = hiddenInput.value.trim();
+          displayedText.classList.add('smooth-transition');
+          const userItem = document.createElement('div');
+          userItem.classList.add('conversation-item', 'user-text');
+          userItem.textContent = userText;
+          displayedText.style.opacity = '0';
+
+          setTimeout(() => {
+            hiddenInput.value = '';
+            displayedText.textContent = '';
+            displayedText.style.opacity = '1';
+            conversation.prepend(userItem);
+            messageCount++;
+            currentExchangeMessages++;
+
+            if (!canvasActivated) {
+              canvasContainer.style.display = 'block';
+              canvasActivated = true;
+              setupCanvas();
+              canvas.addEventListener('mousedown', startDrawing);
+              canvas.addEventListener('mousemove', draw);
+              canvas.addEventListener('mouseup', stopDrawing);
+              canvas.addEventListener('mouseout', stopDrawing);
+              canvas.addEventListener('touchstart', function (e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                canvas.dispatchEvent(new MouseEvent('mousedown', {
+                  clientX: touch.clientX, clientY: touch.clientY
+                }));
+              });
+              canvas.addEventListener('touchmove', function (e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                canvas.dispatchEvent(new MouseEvent('mousemove', {
+                  clientX: touch.clientX, clientY: touch.clientY
+                }));
+              });
+              canvas.addEventListener('touchend', () => {
+                canvas.dispatchEvent(new MouseEvent('mouseup'));
+              });
+            }
+
+            setTimeout(async () => {
+              let responseText;
+              try {
+                const response = await fetch('/api/mirror', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ message: userText })
+                });
+                const data = await response.json();
+                responseText = data.reply;
+              } catch (error) {
+                responseText = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+              }
+
+              const responseItem = document.createElement('div');
+              responseItem.classList.add('conversation-item', 'response-text');
+              responseItem.textContent = responseText;
+              conversation.prepend(responseItem);
+              messageCount++;
+              currentExchangeMessages++;
+
+              if (currentExchangeMessages >= MESSAGES_PER_EXCHANGE) {
+                setTimeout(() => {
+                  const currentOpacity = window.getComputedStyle(cursor).opacity;
+                  cursor.style.opacity = currentOpacity;
+                  cursor.style.animation = 'none';
+                  requestAnimationFrame(() => {
+                    cursor.style.transition = 'opacity 5s ease-out';
+                    cursor.style.opacity = '0';
+                  });
+                  hiddenInput.disabled = true;
+                  hiddenInput.blur();
+                  onExchangeEnd();
+                }, 2000);
+              }
+
+              if (!canSendMessage()) {
+                settingsIcon.style.display = 'block';
+              }
+            }, 500);
+          }, 500);
+        }
+      });
+    };
+
+    // --- Fetch Profile ---
+    async function fetchProfile() {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (data) {
+        profile = data;
+        tier = data.tier;
+        dailyExchanges = data.daily_exchanges || 0;
+        lastExchangeDate = data.last_exchange_date;
+        // Daily reset
+        if (lastExchangeDate !== getToday()) {
+          await supabase.from('profiles').update({ daily_exchanges: 0, last_exchange_date: getToday() }).eq('id', user.id);
+          dailyExchanges = 0;
+        }
+      } else {
+        tier = 'free';
+        dailyExchanges = 0;
+      }
+    }
+
+    // --- Update Profile Exchange Count ---
+    async function incProfileExchanges() {
+      dailyExchanges++;
+      await supabase.from('profiles').update({ daily_exchanges: dailyExchanges, last_exchange_date: getToday() }).eq('id', user.id);
+    }
+
+    // --- UI Tier State ---
+    function updateTierUI() {
+      // Optionally update UI for tier (not intrusive)
+    }
 
     function focusInput() {
       if (messageCount < 8) hiddenInput.focus();
@@ -256,253 +506,6 @@
     function stopDrawing() {
       isDrawing = false;
     }
-
-    window.onload = function () {
-      focusInput();
-      window.addEventListener('resize', () => {
-        if (canvasActivated) {
-          setupCanvas();
-        }
-      });
-    };
-
-    document.addEventListener('click', (e) => {
-      if (e.target !== canvas) focusInput();
-    });
-
-    document.getElementById('input-line').addEventListener('click', focusInput);
-
-    hiddenInput.addEventListener('input', () => {
-      displayedText.textContent = hiddenInput.value;
-    });
-
-    // --- Local Storage for Anonymous ---
-    function getToday() {
-      const now = new Date();
-      return now.toISOString().slice(0,10);
-    }
-    function loadLocalExchanges() {
-      localExchanges = parseInt(localStorage.getItem('mm_localExchanges')||'0',10);
-      localLastDate = localStorage.getItem('mm_localLastDate')||getToday();
-      if (localLastDate !== getToday()) {
-        localExchanges = 0;
-        localLastDate = getToday();
-        localStorage.setItem('mm_localExchanges', '0');
-        localStorage.setItem('mm_localLastDate', localLastDate);
-      }
-    }
-    function incLocalExchanges() {
-      localExchanges++;
-      localStorage.setItem('mm_localExchanges', localExchanges);
-      localStorage.setItem('mm_localLastDate', getToday());
-    }
-
-    // --- Auth Modal Logic ---
-    function showAuthModal() {
-      authModal.style.display = 'flex';
-      authEmail.value = '';
-      authMessage.textContent = '';
-      authEmail.focus();
-    }
-    function hideAuthModal() {
-      authModal.style.display = 'none';
-    }
-    authClose.onclick = hideAuthModal;
-    authModal.onclick = (e) => { if (e.target === authModal) hideAuthModal(); };
-
-    authSendLink.onclick = async () => {
-      const email = authEmail.value.trim();
-      if (!email) { authMessage.textContent = 'Enter your email.'; return; }
-      authSendLink.disabled = true;
-      authMessage.textContent = 'Sending magic link...';
-      const { error } = await supabase.auth.signInWithOtp({ email });
-      if (error) {
-        authMessage.textContent = 'Error: ' + error.message;
-      } else {
-        authMessage.textContent = 'Check your email for the link.';
-      }
-      authSendLink.disabled = false;
-    };
-
-    // --- Auth State Change ---
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session && session.user) {
-        user = session.user;
-        await fetchProfile();
-        hideAuthModal();
-        updateTierUI();
-      } else {
-        user = null;
-        profile = null;
-        tier = 'anonymous';
-        updateTierUI();
-      }
-    });
-
-    // --- Fetch Profile ---
-    async function fetchProfile() {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (data) {
-        profile = data;
-        tier = data.tier;
-        dailyExchanges = data.daily_exchanges || 0;
-        lastExchangeDate = data.last_exchange_date;
-        // Daily reset
-        if (lastExchangeDate !== getToday()) {
-          await supabase.from('profiles').update({ daily_exchanges: 0, last_exchange_date: getToday() }).eq('id', user.id);
-          dailyExchanges = 0;
-        }
-      } else {
-        tier = 'free';
-        dailyExchanges = 0;
-      }
-    }
-
-    // --- Update Profile Exchange Count ---
-    async function incProfileExchanges() {
-      dailyExchanges++;
-      await supabase.from('profiles').update({ daily_exchanges: dailyExchanges, last_exchange_date: getToday() }).eq('id', user.id);
-    }
-
-    // --- UI Tier State ---
-    function updateTierUI() {
-      // Optionally update UI for tier (not intrusive)
-    }
-
-    // --- Settings Icon Click ---
-    settingsIcon.onclick = () => {
-      if (tier === 'anonymous') showAuthModal();
-      // else show account info or upgrade if needed
-    };
-
-    // --- Exchange Tracking ---
-    loadLocalExchanges();
-    let exchangeCount = 0;
-    let currentExchangeMessages = 0;
-    let maxExchanges = EXCHANGES[tier];
-    let maxMessages = maxExchanges * MESSAGES_PER_EXCHANGE;
-
-    function resetSessionCounters() {
-      exchangeCount = 0;
-      currentExchangeMessages = 0;
-      messageCount = 0;
-    }
-
-    function canSendMessage() {
-      if (tier === 'anonymous') {
-        return localExchanges < EXCHANGES.anonymous && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
-      } else if (tier === 'free') {
-        return dailyExchanges < EXCHANGES.free && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
-      } else if (tier === 'premium') {
-        return dailyExchanges < EXCHANGES.premium && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
-      }
-      return false;
-    }
-
-    function onExchangeEnd() {
-      currentExchangeMessages = 0;
-      exchangeCount++;
-      if (tier === 'anonymous') {
-        incLocalExchanges();
-      } else {
-        incProfileExchanges();
-      }
-      if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
-          (tier === 'free' && dailyExchanges >= EXCHANGES.free)) {
-        settingsIcon.style.display = 'block';
-      }
-    }
-
-    hiddenInput.addEventListener('keydown', async (e) => {
-      if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
-        e.preventDefault();
-        if (!canSendMessage()) return;
-
-        const userText = hiddenInput.value.trim();
-        displayedText.classList.add('smooth-transition');
-        const userItem = document.createElement('div');
-        userItem.classList.add('conversation-item', 'user-text');
-        userItem.textContent = userText;
-        displayedText.style.opacity = '0';
-
-        setTimeout(() => {
-          hiddenInput.value = '';
-          displayedText.textContent = '';
-          displayedText.style.opacity = '1';
-          conversation.prepend(userItem);
-          messageCount++;
-          currentExchangeMessages++;
-
-          if (!canvasActivated) {
-            canvasContainer.style.display = 'block';
-            canvasActivated = true;
-            setupCanvas();
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
-            canvas.addEventListener('touchstart', function (e) {
-              e.preventDefault();
-              const touch = e.touches[0];
-              canvas.dispatchEvent(new MouseEvent('mousedown', {
-                clientX: touch.clientX, clientY: touch.clientY
-              }));
-            });
-            canvas.addEventListener('touchmove', function (e) {
-              e.preventDefault();
-              const touch = e.touches[0];
-              canvas.dispatchEvent(new MouseEvent('mousemove', {
-                clientX: touch.clientX, clientY: touch.clientY
-              }));
-            });
-            canvas.addEventListener('touchend', () => {
-              canvas.dispatchEvent(new MouseEvent('mouseup'));
-            });
-          }
-
-          setTimeout(async () => {
-            let responseText;
-            try {
-              const response = await fetch('/api/mirror', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userText })
-              });
-              const data = await response.json();
-              responseText = data.reply;
-            } catch (error) {
-              responseText = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-            }
-
-            const responseItem = document.createElement('div');
-            responseItem.classList.add('conversation-item', 'response-text');
-            responseItem.textContent = responseText;
-            conversation.prepend(responseItem);
-            messageCount++;
-            currentExchangeMessages++;
-
-            if (currentExchangeMessages >= MESSAGES_PER_EXCHANGE) {
-              setTimeout(() => {
-                const currentOpacity = window.getComputedStyle(cursor).opacity;
-                cursor.style.opacity = currentOpacity;
-                cursor.style.animation = 'none';
-                requestAnimationFrame(() => {
-                  cursor.style.transition = 'opacity 5s ease-out';
-                  cursor.style.opacity = '0';
-                });
-                hiddenInput.disabled = true;
-                hiddenInput.blur();
-                onExchangeEnd();
-              }, 2000);
-            }
-
-            if (!canSendMessage()) {
-              settingsIcon.style.display = 'block';
-            }
-          }, 500);
-        }, 500);
-      }
-    });
   </script>
 </body>
 </html>
