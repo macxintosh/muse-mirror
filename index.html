@@ -210,7 +210,7 @@
     let exchangeCount = 0;
     let currentExchangeMessages = 0;
 
-    // --- DOM references ---
+    // --- DOM references (global) ---
     let settingsIcon, authModal, authEmail, authSendLink, authMessage, authClose;
     let hiddenInput, displayedText, conversation, cursor, canvasContainer, canvas, ctx;
     let accountModal, accountEmail, accountTier, accountUpgrade, accountLogout, accountClose;
@@ -240,7 +240,25 @@
       localStorage.setItem('mm_localLastDate', getToday());
     }
 
-    // --- Auth Modal Logic ---
+    // --- Utility functions (global) ---
+    function isAnyModalOpen() {
+      return (
+        (authModal && window.getComputedStyle(authModal).display !== 'none') ||
+        (accountModal && window.getComputedStyle(accountModal).display !== 'none')
+      );
+    }
+
+    function focusInput() {
+      console.log('[MuseMirror] focusInput: typeof window.isAnyModalOpen =', typeof window.isAnyModalOpen);
+      if (window.isAnyModalOpen()) {
+        console.log('[MuseMirror] focusInput: Modal is open, not focusing main input.');
+        return;
+      }
+      hiddenInput.disabled = false;
+      hiddenInput.focus();
+      console.log('[MuseMirror] focusInput: Input ENABLED (graceful limit mode). localExchanges =', localExchanges, 'tier =', tier);
+    }
+
     function showAuthModal() {
       authModal.style.display = 'flex';
       authEmail.value = '';
@@ -352,7 +370,7 @@
         }
       });
 
-      // DOM references
+      // Assign DOM elements
       settingsIcon = document.getElementById('settings-icon');
       authModal = document.getElementById('auth-modal');
       authEmail = document.getElementById('auth-email');
@@ -373,78 +391,7 @@
       accountLogout = document.getElementById('account-logout');
       accountClose = document.getElementById('account-close');
 
-      // Utility to check if any modal is open (define globally)
-      function isAnyModalOpen() {
-        return (
-          (window.authModal && window.getComputedStyle(window.authModal).display !== 'none') ||
-          (window.accountModal && window.getComputedStyle(window.accountModal).display !== 'none')
-        );
-      }
-      console.log('[MuseMirror] isAnyModalOpen() function defined:', typeof isAnyModalOpen);
-
-      // All event listeners and code that calls isAnyModalOpen must be set up after this point
-
-      // Auth modal events
-      authClose.onclick = hideAuthModal;
-      authModal.onclick = (e) => { if (e.target === authModal) hideAuthModal(); };
-      authSendLink.onclick = async () => {
-        const email = authEmail.value.trim();
-        if (!email) { authMessage.textContent = 'Enter your email.'; return; }
-        authSendLink.disabled = true;
-        authMessage.textContent = 'Sending magic link...';
-        const { error } = await supabase.auth.signInWithOtp({ email });
-        if (error) {
-          authMessage.textContent = 'Error: ' + error.message;
-        } else {
-          authMessage.textContent = 'Check your email for the link.';
-        }
-        authSendLink.disabled = false;
-      };
-
-      // Account modal events
-      accountClose.onclick = () => { accountModal.style.display = 'none'; setTimeout(() => { focusInput(); }, 0); };
-      accountModal.onclick = (e) => { if (e.target === accountModal) { accountModal.style.display = 'none'; setTimeout(() => { focusInput(); }, 0); } };
-      accountLogout.onclick = async () => {
-        await supabase.auth.signOut();
-        accountModal.style.display = 'none';
-        // Reset to anonymous state
-        user = null;
-        profile = null;
-        tier = 'anonymous';
-        updateTierUI();
-      };
-      accountUpgrade.onclick = () => {
-        // Placeholder: Integrate Stripe here
-        alert('Upgrade to premium coming soon.');
-      };
-
-      // Settings icon click
-      settingsIcon.onclick = () => {
-        if (tier === 'anonymous') {
-          showAuthModal();
-        } else {
-          // Show account modal for authenticated users
-          if (user) {
-            accountEmail.textContent = user.email || '';
-            accountTier.textContent = tier.charAt(0).toUpperCase() + tier.slice(1) + ' account';
-            if (tier === 'free') {
-              accountUpgrade.style.display = 'block';
-            } else {
-              accountUpgrade.style.display = 'none';
-            }
-            accountModal.style.display = 'flex';
-          }
-        }
-      };
-
-      // Input focus
-      focusInput();
-      window.addEventListener('resize', () => {
-        if (canvasActivated) {
-          setupCanvas();
-        }
-      });
-
+      // Set up event listeners
       document.addEventListener('click', (e) => {
         if (e.target !== canvas && !window.isAnyModalOpen()) focusInput();
       });
@@ -557,6 +504,67 @@
         }
       });
 
+      // Auth modal events
+      authClose.onclick = hideAuthModal;
+      authModal.onclick = (e) => { if (e.target === authModal) hideAuthModal(); };
+      authSendLink.onclick = async () => {
+        const email = authEmail.value.trim();
+        if (!email) { authMessage.textContent = 'Enter your email.'; return; }
+        authSendLink.disabled = true;
+        authMessage.textContent = 'Sending magic link...';
+        const { error } = await supabase.auth.signInWithOtp({ email });
+        if (error) {
+          authMessage.textContent = 'Error: ' + error.message;
+        } else {
+          authMessage.textContent = 'Check your email for the link.';
+        }
+        authSendLink.disabled = false;
+      };
+
+      // Account modal events
+      accountClose.onclick = () => { accountModal.style.display = 'none'; setTimeout(() => { focusInput(); }, 0); };
+      accountModal.onclick = (e) => { if (e.target === accountModal) { accountModal.style.display = 'none'; setTimeout(() => { focusInput(); }, 0); } };
+      accountLogout.onclick = async () => {
+        await supabase.auth.signOut();
+        accountModal.style.display = 'none';
+        // Reset to anonymous state
+        user = null;
+        profile = null;
+        tier = 'anonymous';
+        updateTierUI();
+      };
+      accountUpgrade.onclick = () => {
+        // Placeholder: Integrate Stripe here
+        alert('Upgrade to premium coming soon.');
+      };
+
+      // Settings icon click
+      settingsIcon.onclick = () => {
+        if (tier === 'anonymous') {
+          showAuthModal();
+        } else {
+          // Show account modal for authenticated users
+          if (user) {
+            accountEmail.textContent = user.email || '';
+            accountTier.textContent = tier.charAt(0).toUpperCase() + tier.slice(1) + ' account';
+            if (tier === 'free') {
+              accountUpgrade.style.display = 'block';
+            } else {
+              accountUpgrade.style.display = 'none';
+            }
+            accountModal.style.display = 'flex';
+          }
+        }
+      };
+
+      // Input focus
+      focusInput();
+      window.addEventListener('resize', () => {
+        if (canvasActivated) {
+          setupCanvas();
+        }
+      });
+
       // After all user state and UI logic (in handleSessionEvent and after updateTierUI/focusInput),
       // ensure that after a page refresh, the cursor is always visible and input is always enabled.
       // This should override any disabling from previous exchanges if the page is refreshed.
@@ -617,17 +625,6 @@
         // Authenticated (free or premium)
         settingsIcon.style.display = 'block';
       }
-    }
-
-    function focusInput() {
-      console.log('[MuseMirror] focusInput: typeof window.isAnyModalOpen =', typeof window.isAnyModalOpen);
-      if (window.isAnyModalOpen()) {
-        console.log('[MuseMirror] focusInput: Modal is open, not focusing main input.');
-        return;
-      }
-      hiddenInput.disabled = false;
-      hiddenInput.focus();
-      console.log('[MuseMirror] focusInput: Input ENABLED (graceful limit mode). localExchanges =', localExchanges, 'tier =', tier);
     }
 
     function setupCanvas() {
