@@ -297,6 +297,24 @@
 
     // --- DOMContentLoaded/Onload Handler ---
     window.onload = async function () {
+      // Register auth state change handler FIRST
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('[MuseMirror] Auth state changed:', event, session);
+        if (session && session.user) {
+          user = session.user;
+          await fetchProfile();
+          hideAuthModal();
+          updateTierUI();
+          focusInput();
+        } else {
+          user = null;
+          profile = null;
+          tier = 'anonymous';
+          updateTierUI();
+          focusInput();
+        }
+      });
+
       // DOM references
       settingsIcon = document.getElementById('settings-icon');
       authModal = document.getElementById('auth-modal');
@@ -359,25 +377,9 @@
         alert('Upgrade to premium coming soon.');
       };
 
-      // Auth state change
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        if (session && session.user) {
-          user = session.user;
-          await fetchProfile();
-          hideAuthModal();
-          updateTierUI();
-          focusInput();
-        } else {
-          user = null;
-          profile = null;
-          tier = 'anonymous';
-          updateTierUI();
-          focusInput();
-        }
-      });
-
       // On load, check for existing session (magic link or previous login)
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('[MuseMirror] On load: session =', session);
       if (session && session.user) {
         user = session.user;
         await fetchProfile();
