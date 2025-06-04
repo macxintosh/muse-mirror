@@ -50,8 +50,16 @@
       width: 2px;
       height: 24px;
       background-color: #333;
+      opacity: 0.2;
+    }
+
+    #cursor.enabled {
       animation: breathe 4.5s infinite ease-in-out;
-      margin-left: 1px;
+    }
+
+    #cursor.disabled {
+      opacity: 0.2;
+      animation: none;
     }
 
     @keyframes breathe {
@@ -255,9 +263,11 @@
         console.log('[MuseMirror] focusInput: Modal is open, not focusing main input.');
         return;
       }
-      hiddenInput.disabled = false;
-      hiddenInput.focus();
-      console.log('[MuseMirror] focusInput: Input ENABLED (graceful limit mode). localExchanges =', localExchanges, 'tier =', tier);
+      if (canSendMessage()) {
+        hiddenInput.disabled = false;
+        hiddenInput.focus();
+        console.log('[MuseMirror] focusInput: Input ENABLED. localExchanges =', localExchanges, 'tier =', tier);
+      }
     }
 
     function showAuthModal() {
@@ -278,6 +288,29 @@
       messageCount = 0;
     }
     
+    // --- UI State Management ---
+    function updateUIState() {
+      const canSend = canSendMessage();
+      console.log('[MuseMirror] updateUIState: canSend =', canSend, 'tier =', tier, 'localExchanges =', localExchanges, 'dailyExchanges =', dailyExchanges);
+      
+      // Update cursor state
+      if (canSend) {
+        cursor.classList.add('enabled');
+        cursor.classList.remove('disabled');
+      } else {
+        cursor.classList.remove('enabled');
+        cursor.classList.add('disabled');
+      }
+
+      // Update input state
+      hiddenInput.disabled = !canSend;
+      if (canSend && !window.isAnyModalOpen()) {
+        hiddenInput.focus();
+      } else {
+        hiddenInput.blur();
+      }
+    }
+
     async function onExchangeEnd() {
       currentExchangeMessages = 0;
       exchangeCount++;
@@ -295,19 +328,7 @@
           (tier === 'premium' && dailyExchanges >= EXCHANGES.premium)) {
         settingsIcon.style.display = 'block';
       }
-      // Always disable input and cursor after every exchange
-      const currentOpacity = window.getComputedStyle(cursor).opacity;
-      cursor.style.opacity = currentOpacity;
-      cursor.style.animation = 'none';
-      requestAnimationFrame(() => {
-        cursor.style.transition = 'opacity 5s ease-out';
-        cursor.style.opacity = '0';
-      });
-      hiddenInput.disabled = true;
-      hiddenInput.blur();
-      setTimeout(() => {
-        console.log('[MuseMirror] After exchange: canSendMessage =', canSendMessage(), 'currentExchangeMessages =', currentExchangeMessages, 'dailyExchanges =', dailyExchanges, 'tier =', tier);
-      }, 500);
+      updateUIState();
     }
 
     function canSendMessage() {
@@ -342,11 +363,7 @@
           fetchProfile().then(() => {
             console.log(`[MuseMirror] ${eventLabel}: Authenticated user. tier =`, tier, 'dailyExchanges =', dailyExchanges);
             updateTierUI();
-            if (canSendMessage()) {
-              focusInput();
-            } else {
-              hiddenInput.disabled = true;
-            }
+            updateUIState();
           });
         } else {
           user = null;
@@ -356,11 +373,7 @@
           resetSessionCounters();
           console.log(`[MuseMirror] ${eventLabel}: Anonymous user. localExchanges =`, localExchanges);
           updateTierUI();
-          if (canSendMessage()) {
-            focusInput();
-          } else {
-            hiddenInput.disabled = true;
-          }
+          updateUIState();
         }
       }
 
@@ -604,23 +617,8 @@
         }
       });
 
-      // After all user state and UI logic (in handleSessionEvent and after updateTierUI/focusInput),
-      // ensure that after a page refresh, the cursor is always visible and input is always enabled.
-      // This should override any disabling from previous exchanges if the page is refreshed.
-      setTimeout(() => {
-        const canSend = canSendMessage();
-        console.log('[MuseMirror] [After refresh] canSendMessage() =', canSend, 'localExchanges =', localExchanges, 'tier =', tier);
-        hiddenInput.disabled = false;
-        hiddenInput.focus();
-        cursor.style.opacity = '1';
-        cursor.style.animation = '';
-        cursor.style.transition = '';
-        if (hiddenInput.disabled) {
-          console.log('[MuseMirror] [After refresh] Input is DISABLED. This should not happen!');
-        } else {
-          console.log('[MuseMirror] [After refresh] Input is ENABLED.');
-        }
-      }, 0);
+      // Initial UI state setup
+      updateUIState();
     };
 
     // --- Fetch Profile ---
@@ -681,6 +679,9 @@
         // Authenticated (free or premium)
         settingsIcon.style.display = 'block';
       }
+
+      // Update UI state after tier changes
+      updateUIState();
     }
 
     function setupCanvas() {
