@@ -298,7 +298,35 @@
     // --- DOMContentLoaded/Onload Handler ---
     window.onload = async function () {
       // Enhanced Supabase Auth event handler for debugging and session refresh
-      let initialSessionHandled = false;
+      function handleSessionEvent(session, eventLabel) {
+        console.log(`[MuseMirror] handleSessionEvent called from ${eventLabel}. Session:`, session);
+        if (session && session.user) {
+          user = session.user;
+          fetchProfile().then(() => {
+            console.log(`[MuseMirror] ${eventLabel}: Authenticated user. tier =`, tier, 'dailyExchanges =', dailyExchanges);
+            updateTierUI();
+            if (canSendMessage()) {
+              focusInput();
+            } else {
+              hiddenInput.disabled = true;
+            }
+          });
+        } else {
+          user = null;
+          profile = null;
+          tier = 'anonymous';
+          loadLocalExchanges();
+          resetSessionCounters();
+          console.log(`[MuseMirror] ${eventLabel}: Anonymous user. localExchanges =`, localExchanges);
+          updateTierUI();
+          if (canSendMessage()) {
+            focusInput();
+          } else {
+            hiddenInput.disabled = true;
+          }
+        }
+      }
+
       supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('[MuseMirror] Auth state changed:', event, session);
         if (event === 'TOKEN_REFRESHED') {
@@ -307,38 +335,11 @@
         if (event === 'SIGNED_OUT') {
           console.warn('[MuseMirror] User was signed out unexpectedly.');
         }
-        if (event === 'INITIAL_SESSION') {
-          initialSessionHandled = true;
-          if (session && session.user) {
-            user = session.user;
-            await fetchProfile();
-            console.log('[MuseMirror] INITIAL_SESSION: Authenticated user. tier =', tier, 'dailyExchanges =', dailyExchanges);
-            updateTierUI();
-            if (canSendMessage()) {
-              focusInput();
-            } else {
-              hiddenInput.disabled = true;
-            }
-          } else {
-            user = null;
-            profile = null;
-            tier = 'anonymous';
-            loadLocalExchanges();
-            resetSessionCounters();
-            console.log('[MuseMirror] INITIAL_SESSION: Anonymous user. localExchanges =', localExchanges);
-            updateTierUI();
-            if (canSendMessage()) {
-              focusInput();
-            } else {
-              hiddenInput.disabled = true;
-            }
-          }
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+          handleSessionEvent(session, event);
         }
         if (event === 'PASSWORD_RECOVERY') {
           console.log('[MuseMirror] Password recovery event.');
-        }
-        if (event === 'SIGNED_IN') {
-          console.log('[MuseMirror] User signed in.');
         }
         if (event === 'USER_UPDATED') {
           console.log('[MuseMirror] User updated.');
