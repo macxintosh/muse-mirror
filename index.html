@@ -436,8 +436,10 @@
 
       // Utility to check if any modal is open
       function isAnyModalOpen() {
-        return (authModal && authModal.style.display === 'flex') ||
-               (accountModal && accountModal.style.display === 'flex');
+        return (
+          (authModal && window.getComputedStyle(authModal).display !== 'none') ||
+          (accountModal && window.getComputedStyle(accountModal).display !== 'none')
+        );
       }
 
       document.addEventListener('click', (e) => {
