@@ -252,10 +252,30 @@
     }
 
     // --- Exchange Tracking ---
-    function resetSessionCounters() {
-      exchangeCount = 0;
+    async function onExchangeEnd() {
       currentExchangeMessages = 0;
-      messageCount = 0;
+      exchangeCount++;
+      console.log('[MuseMirror] Exchange ended. exchangeCount =', exchangeCount, 'tier =', tier);
+      if (tier === 'anonymous') {
+        incLocalExchanges();
+        console.log('[MuseMirror] Anonymous: localExchanges =', localExchanges);
+      } else {
+        await incProfileExchanges();
+        await fetchProfile();
+        console.log('[MuseMirror] Authenticated: dailyExchanges =', dailyExchanges, 'tier =', tier);
+      }
+      if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
+          (tier === 'free' && dailyExchanges >= EXCHANGES.free)) {
+        settingsIcon.style.display = 'block';
+      }
+      setTimeout(() => {
+        console.log('[MuseMirror] After exchange: canSendMessage =', canSendMessage(), 'currentExchangeMessages =', currentExchangeMessages, 'dailyExchanges =', dailyExchanges, 'tier =', tier);
+        if (canSendMessage()) {
+          focusInput();
+        } else {
+          hiddenInput.disabled = true;
+        }
+      }, 500);
     }
 
     function canSendMessage() {
@@ -267,23 +287,6 @@
         return dailyExchanges < EXCHANGES.premium && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
       }
       return false;
-    }
-
-    function onExchangeEnd() {
-      currentExchangeMessages = 0;
-      exchangeCount++;
-      if (tier === 'anonymous') {
-        incLocalExchanges();
-      } else {
-        incProfileExchanges();
-      }
-      if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
-          (tier === 'free' && dailyExchanges >= EXCHANGES.free)) {
-        settingsIcon.style.display = 'block';
-      }
-      setTimeout(() => {
-        focusInput();
-      }, 500);
     }
 
     // --- DOMContentLoaded/Onload Handler ---
