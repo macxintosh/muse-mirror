@@ -274,13 +274,18 @@
           (tier === 'free' && dailyExchanges >= EXCHANGES.free)) {
         settingsIcon.style.display = 'block';
       }
+      // Always disable input and cursor after every exchange
+      const currentOpacity = window.getComputedStyle(cursor).opacity;
+      cursor.style.opacity = currentOpacity;
+      cursor.style.animation = 'none';
+      requestAnimationFrame(() => {
+        cursor.style.transition = 'opacity 5s ease-out';
+        cursor.style.opacity = '0';
+      });
+      hiddenInput.disabled = true;
+      hiddenInput.blur();
       setTimeout(() => {
         console.log('[MuseMirror] After exchange: canSendMessage =', canSendMessage(), 'currentExchangeMessages =', currentExchangeMessages, 'dailyExchanges =', dailyExchanges, 'tier =', tier);
-        if (canSendMessage()) {
-          focusInput();
-        } else {
-          hiddenInput.disabled = true;
-        }
       }, 500);
     }
 
