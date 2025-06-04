@@ -382,6 +382,8 @@
       }
       console.log('[MuseMirror] isAnyModalOpen() function defined:', typeof isAnyModalOpen);
 
+      // All event listeners and code that calls isAnyModalOpen must be set up after this point
+
       // Auth modal events
       authClose.onclick = hideAuthModal;
       authModal.onclick = (e) => { if (e.target === authModal) hideAuthModal(); };
@@ -618,6 +620,7 @@
     }
 
     function focusInput() {
+      console.log('[MuseMirror] focusInput: typeof isAnyModalOpen =', typeof isAnyModalOpen);
       if (isAnyModalOpen()) {
         console.log('[MuseMirror] focusInput: Modal is open, not focusing main input.');
         return;
