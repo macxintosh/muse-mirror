@@ -252,6 +252,12 @@
     }
 
     // --- Exchange Tracking ---
+    function resetSessionCounters() {
+      exchangeCount = 0;
+      currentExchangeMessages = 0;
+      messageCount = 0;
+    }
+    
     async function onExchangeEnd() {
       currentExchangeMessages = 0;
       exchangeCount++;
