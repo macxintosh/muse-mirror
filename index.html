@@ -325,7 +325,8 @@
         exchangeCount,
         tier,
         dailyExchanges,
-        localExchanges
+        localExchanges,
+        EXCHANGES: EXCHANGES[tier]
       });
 
       currentExchangeMessages = 0;
@@ -340,10 +341,19 @@
         console.log('[MuseMirror] Authenticated: dailyExchanges =', dailyExchanges, 'tier =', tier);
       }
       
-      if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
-          (tier === 'free' && dailyExchanges >= EXCHANGES.free) ||
-          (tier === 'premium' && dailyExchanges >= EXCHANGES.premium)) {
+      // Check if daily limit reached
+      const dailyLimitReached = tier === 'anonymous'
+        ? localExchanges >= EXCHANGES.anonymous
+        : dailyExchanges >= EXCHANGES[tier];
+
+      if (dailyLimitReached) {
         settingsIcon.style.display = 'block';
+        console.log('[MuseMirror] Daily limit reached:', {
+          tier,
+          dailyExchanges,
+          localExchanges,
+          EXCHANGES: EXCHANGES[tier]
+        });
       }
 
       console.log('[MuseMirror] Calling updateUIState after onExchangeEnd');
@@ -360,15 +370,32 @@
       const exchangeLimitReached = currentExchangeMessages >= MESSAGES_PER_EXCHANGE;
 
       console.log('[MuseMirror] canSendMessage check:', {
+        // Current state
         tier,
         currentExchangeMessages,
-        MESSAGES_PER_EXCHANGE,
+        exchangeCount,
         dailyExchanges,
         localExchanges,
+        MESSAGES_PER_EXCHANGE,
         EXCHANGES: EXCHANGES[tier],
+        
+        // Limit checks
         dailyLimitReached,
         exchangeLimitReached,
-        canSend: !dailyLimitReached && !exchangeLimitReached
+        
+        // Detailed breakdown
+        dailyLimitCheck: {
+          anonymous: tier === 'anonymous' ? `${localExchanges} >= ${EXCHANGES.anonymous}` : 'N/A',
+          free: tier === 'free' ? `${dailyExchanges} >= ${EXCHANGES.free}` : 'N/A',
+          premium: tier === 'premium' ? `${dailyExchanges} >= ${EXCHANGES.premium}` : 'N/A'
+        },
+        exchangeLimitCheck: `${currentExchangeMessages} >= ${MESSAGES_PER_EXCHANGE}`,
+        
+        // Final result
+        canSend: !dailyLimitReached && !exchangeLimitReached,
+        reason: dailyLimitReached ? 'Daily limit reached' : 
+                exchangeLimitReached ? 'Exchange message limit reached' : 
+                'Can send message'
       });
 
       // Return false if either limit is reached
@@ -692,7 +719,16 @@
     // --- Update Profile Exchange Count ---
     async function incProfileExchanges() {
       dailyExchanges++;
-      await supabase.from('profiles').update({ daily_exchanges: dailyExchanges, last_exchange_date: getToday() }).eq('id', user.id);
+      console.log('[MuseMirror] Incrementing daily exchanges:', {
+        before: dailyExchanges - 1,
+        after: dailyExchanges,
+        tier,
+        EXCHANGES: EXCHANGES[tier]
+      });
+      await supabase.from('profiles').update({ 
+        daily_exchanges: dailyExchanges, 
+        last_exchange_date: getToday() 
+      }).eq('id', user.id);
     }
 
     // --- UI Tier State ---
