@@ -604,15 +604,9 @@
     }
 
     function focusInput() {
-      const canSend = canSendMessage();
-      if (canSend) {
-        hiddenInput.disabled = false;
-        hiddenInput.focus();
-        console.log('[MuseMirror] focusInput: Input ENABLED. canSendMessage() =', canSend, 'localExchanges =', localExchanges, 'tier =', tier);
-      } else {
-        hiddenInput.disabled = true;
-        console.log('[MuseMirror] focusInput: Input DISABLED. canSendMessage() =', canSend, 'localExchanges =', localExchanges, 'tier =', tier);
-      }
+      hiddenInput.disabled = false;
+      hiddenInput.focus();
+      console.log('[MuseMirror] focusInput: Input ENABLED (graceful limit mode). localExchanges =', localExchanges, 'tier =', tier);
     }
 
     function setupCanvas() {
