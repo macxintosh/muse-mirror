@@ -320,7 +320,10 @@
     }
 
     function canSendMessage() {
-      // Check daily exchange limits first
+      // Check if we've already done an exchange in this session
+      const sessionExchangeDone = exchangeCount > 0;
+      
+      // Check daily exchange limits
       const dailyLimitReached = tier === 'anonymous' 
         ? localExchanges >= EXCHANGES.anonymous
         : dailyExchanges >= EXCHANGES[tier];
@@ -340,10 +343,12 @@
         EXCHANGES: EXCHANGES[tier],
         
         // Limit checks
+        sessionExchangeDone,
         dailyLimitReached,
         exchangeLimitReached,
         
         // Detailed breakdown
+        sessionCheck: `exchangeCount > 0: ${exchangeCount} > 0`,
         dailyLimitCheck: {
           anonymous: tier === 'anonymous' ? `${localExchanges} >= ${EXCHANGES.anonymous}` : 'N/A',
           free: tier === 'free' ? `${dailyExchanges} >= ${EXCHANGES.free}` : 'N/A',
@@ -352,16 +357,18 @@
         exchangeLimitCheck: `${currentExchangeMessages} >= ${MESSAGES_PER_EXCHANGE}`,
         
         // Final result
-        canSend: !dailyLimitReached && !exchangeLimitReached,
-        reason: dailyLimitReached ? 'Daily limit reached' : 
+        canSend: !sessionExchangeDone && !dailyLimitReached && !exchangeLimitReached,
+        reason: sessionExchangeDone ? 'Session exchange completed - refresh page to start new exchange' :
+                dailyLimitReached ? 'Daily limit reached' : 
                 exchangeLimitReached ? 'Exchange message limit reached' : 
                 'Can send message'
       });
 
-      // For premium users with 6 exchanges, this should return true since 6 < 10
-      // For free users with 6 exchanges, this should return false since 6 >= 3
-      // For anonymous users with 6 exchanges, this should return false since 6 >= 3
-      return !dailyLimitReached && !exchangeLimitReached;
+      // Return false if:
+      // 1. We've already done an exchange in this session (exchangeCount > 0)
+      // 2. We've hit the daily limit
+      // 3. We've hit the message limit for this exchange
+      return !sessionExchangeDone && !dailyLimitReached && !exchangeLimitReached;
     }
 
     async function onExchangeEnd() {
@@ -401,7 +408,12 @@
         });
       }
 
-      console.log('[MuseMirror] Calling updateUIState after onExchangeEnd');
+      // Always show settings icon after exchange ends
+      settingsIcon.style.display = 'block';
+
+      // Always disable input after exchange ends
+      // This will stay disabled until page refresh
+      console.log('[MuseMirror] Exchange completed - input disabled until page refresh');
       updateUIState();
     }
 
@@ -696,7 +708,8 @@
         }
       });
 
-      // Initial UI state setup
+      // Initial UI state setup - only enable if we haven't done an exchange yet
+      // and we're under the daily limit
       updateUIState();
     };
 
