@@ -544,6 +544,17 @@
           }, 500);
         }
       });
+
+      // After all user state and UI logic (in handleSessionEvent and after updateTierUI/focusInput),
+      // ensure that after a page refresh, the cursor is always visible and input is always enabled.
+      // This should override any disabling from previous exchanges if the page is refreshed.
+      setTimeout(() => {
+        hiddenInput.disabled = false;
+        hiddenInput.focus();
+        cursor.style.opacity = '1';
+        cursor.style.animation = '';
+        cursor.style.transition = '';
+      }, 0);
     };
 
     // --- Fetch Profile ---
