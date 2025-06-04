@@ -591,15 +591,19 @@
 
     // --- UI Tier State ---
     function updateTierUI() {
-      // Show/hide settings icon for authenticated users at/over their limit
-      if (tier === 'free' && dailyExchanges >= EXCHANGES.free) {
-        settingsIcon.style.display = 'block';
-      } else if (tier === 'premium' && dailyExchanges >= EXCHANGES.premium) {
-        settingsIcon.style.display = 'block';
-      } else if (tier !== 'anonymous') {
-        settingsIcon.style.display = 'block';
+      // Simplified settings icon logic:
+      // 1. Do NOT show for fresh anonymous users before their first exchange
+      // 2. ALWAYS show for any authenticated user (free or premium)
+      // 3. SHOW for anonymous users after their first exchange
+      if (tier === 'anonymous') {
+        if (localExchanges > 0) {
+          settingsIcon.style.display = 'block';
+        } else {
+          settingsIcon.style.display = 'none';
+        }
       } else {
-        settingsIcon.style.display = 'none';
+        // Authenticated (free or premium)
+        settingsIcon.style.display = 'block';
       }
     }
 
