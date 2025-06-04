@@ -141,48 +141,6 @@
     .canvas-visible {
       opacity: 1 !important;
     }
-
-    #settings-icon {
-      display: none;
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      z-index: 10;
-      cursor: pointer;
-    }
-
-    #usage-popup {
-      position: fixed;
-      top: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-    }
-
-    #usage-popup.visible {
-      opacity: 1;
-    }
-
-    #account-modal-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-    }
-
-    #usage-counter {
-      font-size: 0.9em;
-      color: #666;
-      margin-bottom: 16px;
-      text-align: center;
-    }
   </style>
 </head>
 <body>
@@ -624,15 +582,6 @@
           if (user) {
             accountEmail.textContent = user.email || '';
             accountTier.textContent = tier.charAt(0).toUpperCase() + tier.slice(1) + ' account';
-            
-            // Add usage counter
-            const usageCounter = document.createElement('div');
-            usageCounter.id = 'usage-counter';
-            usageCounter.textContent = getUsageMessage();
-            
-            // Insert after account tier
-            accountTier.after(usageCounter);
-            
             if (tier === 'free') {
               accountUpgrade.style.display = 'block';
             } else {
@@ -697,61 +646,19 @@
 
     // --- UI Tier State ---
     function updateTierUI() {
-      // Show settings icon after 2 exchanges for anonymous users
+      // Simplified settings icon logic:
+      // 1. Do NOT show for fresh anonymous users before their first exchange
+      // 2. ALWAYS show for any authenticated user (free or premium)
+      // 3. SHOW for anonymous users after their first exchange
       if (tier === 'anonymous') {
-        if (localExchanges >= 2) {
+        if (localExchanges > 0) {
           settingsIcon.style.display = 'block';
-          // Show usage popup after 2nd exchange
-          if (localExchanges === 2) {
-            showUsagePopup('1 exchange left today');
-          }
         } else {
           settingsIcon.style.display = 'none';
         }
       } else {
-        // Always show for authenticated users
+        // Authenticated (free or premium)
         settingsIcon.style.display = 'block';
-      }
-    }
-
-    function showUsagePopup(message) {
-      const popup = document.createElement('div');
-      popup.id = 'usage-popup';
-      popup.textContent = message;
-      document.body.appendChild(popup);
-
-      // Trigger reflow
-      popup.offsetHeight;
-
-      // Show popup
-      popup.classList.add('visible');
-
-      // Hide after 3 seconds
-      setTimeout(() => {
-        popup.classList.remove('visible');
-        setTimeout(() => {
-          document.body.removeChild(popup);
-        }, 300);
-      }, 3000);
-    }
-
-    function getUsageMessage() {
-      if (tier === 'anonymous') {
-        return `${localExchanges} of 3 exchanges used today`;
-      } else if (tier === 'free') {
-        return `${dailyExchanges} of 3 exchanges used today`;
-      } else {
-        return `${dailyExchanges} of 10 exchanges used today`;
-      }
-    }
-
-    function getLimitMessage() {
-      if (tier === 'anonymous') {
-        return "that's all the light i've got for now. sign up for 3 daily exchanges.";
-      } else if (tier === 'free') {
-        return "that's all the light i've got for now. upgrade to premium for 10 daily exchanges + conversation exports.";
-      } else {
-        return "that's all the light i've got today. return tomorrow.";
       }
     }
 
