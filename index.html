@@ -459,14 +459,19 @@
             conversation.prepend(userItem);
             messageCount++;
 
-            // If over limit, show poetic assistant message and do not call API or increment exchange
-            if (!canSendMessage()) {
+            // If over daily limit (after refresh), show poetic assistant message and do not call API or increment exchange
+            if (!canSendMessage() && currentExchangeMessages === 0) {
               const responseItem = document.createElement('div');
               responseItem.classList.add('conversation-item', 'response-text');
               responseItem.textContent = "that's all the light i've got for now. sign up to continue reflecting.";
               conversation.prepend(responseItem);
-              console.log('[MuseMirror] Over limit: showed poetic assistant message.');
-              // Do not increment currentExchangeMessages or call onExchangeEnd
+              console.log('[MuseMirror] Over daily limit after refresh: showed poetic assistant message.');
+              return;
+            }
+
+            // If in an active exchange, proceed as normal
+            if (!canSendMessage()) {
+              // If in the middle of an exchange but over limit, do nothing (exchange will end as usual)
               return;
             }
 
