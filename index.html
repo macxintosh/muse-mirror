@@ -373,13 +373,14 @@
       accountLogout = document.getElementById('account-logout');
       accountClose = document.getElementById('account-close');
 
-      // Utility to check if any modal is open
+      // Utility to check if any modal is open (define globally)
       function isAnyModalOpen() {
         return (
-          (authModal && window.getComputedStyle(authModal).display !== 'none') ||
-          (accountModal && window.getComputedStyle(accountModal).display !== 'none')
+          (window.authModal && window.getComputedStyle(window.authModal).display !== 'none') ||
+          (window.accountModal && window.getComputedStyle(window.accountModal).display !== 'none')
         );
       }
+      console.log('[MuseMirror] isAnyModalOpen() function defined:', typeof isAnyModalOpen);
 
       // Auth modal events
       authClose.onclick = hideAuthModal;
