@@ -459,9 +459,9 @@
             currentExchangeMessages++;
             console.log('[MuseMirror] User message sent. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
 
-            // Check 8-message limit immediately after user message
-            if (currentExchangeMessages >= MESSAGES_PER_EXCHANGE) {
-              console.log('[MuseMirror] 8-message limit reached. Ending exchange.');
+            // Enforce 4 user messages per exchange (not 8 total)
+            if (currentExchangeMessages >= 4) {
+              console.log('[MuseMirror] 4-user-message limit reached. Ending exchange.');
               const currentOpacity = window.getComputedStyle(cursor).opacity;
               cursor.style.opacity = currentOpacity;
               cursor.style.animation = 'none';
@@ -522,7 +522,7 @@
               conversation.prepend(responseItem);
               console.log('[MuseMirror] Assistant response added. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
 
-              // No increment of currentExchangeMessages here!
+              // Do NOT increment currentExchangeMessages here!
 
               if (!canSendMessage()) {
                 settingsIcon.style.display = 'block';
