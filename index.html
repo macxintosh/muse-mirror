@@ -383,14 +383,24 @@
       if (session && session.user) {
         user = session.user;
         await fetchProfile();
+        console.log('[MuseMirror] Authenticated user loaded on refresh. tier =', tier, 'dailyExchanges =', dailyExchanges);
         updateTierUI();
-        focusInput();
+        if (canSendMessage()) {
+          focusInput();
+        } else {
+          hiddenInput.disabled = true;
+        }
       } else {
         user = null;
         profile = null;
         tier = 'anonymous';
+        console.log('[MuseMirror] No authenticated user on refresh.');
         updateTierUI();
-        focusInput();
+        if (canSendMessage()) {
+          focusInput();
+        } else {
+          hiddenInput.disabled = true;
+        }
       }
 
       // Settings icon click
@@ -440,13 +450,30 @@
           userItem.textContent = userText;
           displayedText.style.opacity = '0';
 
-          setTimeout(() => {
+          setTimeout(async () => {
             hiddenInput.value = '';
             displayedText.textContent = '';
             displayedText.style.opacity = '1';
             conversation.prepend(userItem);
             messageCount++;
             currentExchangeMessages++;
+            console.log('[MuseMirror] User message sent. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
+
+            // Check 8-message limit immediately after user message
+            if (currentExchangeMessages >= MESSAGES_PER_EXCHANGE) {
+              console.log('[MuseMirror] 8-message limit reached. Ending exchange.');
+              const currentOpacity = window.getComputedStyle(cursor).opacity;
+              cursor.style.opacity = currentOpacity;
+              cursor.style.animation = 'none';
+              requestAnimationFrame(() => {
+                cursor.style.transition = 'opacity 5s ease-out';
+                cursor.style.opacity = '0';
+              });
+              hiddenInput.disabled = true;
+              hiddenInput.blur();
+              await onExchangeEnd();
+              return;
+            }
 
             if (!canvasActivated) {
               canvasContainer.style.display = 'block';
@@ -493,23 +520,9 @@
               responseItem.classList.add('conversation-item', 'response-text');
               responseItem.textContent = responseText;
               conversation.prepend(responseItem);
-              messageCount++;
-              currentExchangeMessages++;
+              console.log('[MuseMirror] Assistant response added. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
 
-              if (currentExchangeMessages >= MESSAGES_PER_EXCHANGE) {
-                setTimeout(() => {
-                  const currentOpacity = window.getComputedStyle(cursor).opacity;
-                  cursor.style.opacity = currentOpacity;
-                  cursor.style.animation = 'none';
-                  requestAnimationFrame(() => {
-                    cursor.style.transition = 'opacity 5s ease-out';
-                    cursor.style.opacity = '0';
-                  });
-                  hiddenInput.disabled = true;
-                  hiddenInput.blur();
-                  onExchangeEnd();
-                }, 2000);
-              }
+              // No increment of currentExchangeMessages here!
 
               if (!canSendMessage()) {
                 settingsIcon.style.display = 'block';
