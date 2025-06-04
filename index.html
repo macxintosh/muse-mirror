@@ -444,7 +444,6 @@
       hiddenInput.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter' && hiddenInput.value.trim() !== '') {
           e.preventDefault();
-          if (!canSendMessage()) return;
 
           const userText = hiddenInput.value.trim();
           displayedText.classList.add('smooth-transition');
@@ -459,6 +458,18 @@
             displayedText.style.opacity = '1';
             conversation.prepend(userItem);
             messageCount++;
+
+            // If over limit, show poetic assistant message and do not call API or increment exchange
+            if (!canSendMessage()) {
+              const responseItem = document.createElement('div');
+              responseItem.classList.add('conversation-item', 'response-text');
+              responseItem.textContent = "that's all the light i've got for now. sign up to continue reflecting.";
+              conversation.prepend(responseItem);
+              console.log('[MuseMirror] Over limit: showed poetic assistant message.');
+              // Do not increment currentExchangeMessages or call onExchangeEnd
+              return;
+            }
+
             currentExchangeMessages++;
             console.log('[MuseMirror] User message sent. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
 
