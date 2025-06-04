@@ -321,6 +321,17 @@
 
     // --- DOMContentLoaded/Onload Handler ---
     window.onload = async function () {
+      // Check for session_id in URL (Stripe checkout success)
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session_id');
+      if (sessionId) {
+        // Remove session_id from URL
+        window.history.replaceState({}, document.title, '/account');
+        // Refresh profile to get updated tier
+        await fetchProfile();
+        updateTierUI();
+      }
+
       // Enhanced Supabase Auth event handler for debugging and session refresh
       function handleSessionEvent(session, eventLabel) {
         console.log(`[MuseMirror] handleSessionEvent called from ${eventLabel}. Session:`, session);
@@ -535,9 +546,31 @@
         // Automatic page refresh for clean anonymous state
         window.location.reload();
       };
-      accountUpgrade.onclick = () => {
-        // Placeholder: Integrate Stripe here
-        alert('Upgrade to premium coming soon.');
+      accountUpgrade.onclick = async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            showAuthModal();
+            return;
+          }
+
+          const response = await fetch('https://grtbltrjiluriwfjcfva.supabase.co/functions/v1/stripe-checkout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          const { url, error } = await response.json();
+          if (error) throw new Error(error);
+          
+          // Redirect to Stripe Checkout
+          window.location.href = url;
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Failed to start checkout. Please try again.');
+        }
       };
 
       // Settings icon click
