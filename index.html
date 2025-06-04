@@ -549,11 +549,18 @@
       // ensure that after a page refresh, the cursor is always visible and input is always enabled.
       // This should override any disabling from previous exchanges if the page is refreshed.
       setTimeout(() => {
+        const canSend = canSendMessage();
+        console.log('[MuseMirror] [After refresh] canSendMessage() =', canSend, 'localExchanges =', localExchanges, 'tier =', tier);
         hiddenInput.disabled = false;
         hiddenInput.focus();
         cursor.style.opacity = '1';
         cursor.style.animation = '';
         cursor.style.transition = '';
+        if (hiddenInput.disabled) {
+          console.log('[MuseMirror] [After refresh] Input is DISABLED. This should not happen!');
+        } else {
+          console.log('[MuseMirror] [After refresh] Input is ENABLED.');
+        }
       }, 0);
     };
 
@@ -597,11 +604,14 @@
     }
 
     function focusInput() {
-      if (canSendMessage()) {
+      const canSend = canSendMessage();
+      if (canSend) {
         hiddenInput.disabled = false;
         hiddenInput.focus();
+        console.log('[MuseMirror] focusInput: Input ENABLED. canSendMessage() =', canSend, 'localExchanges =', localExchanges, 'tier =', tier);
       } else {
         hiddenInput.disabled = true;
+        console.log('[MuseMirror] focusInput: Input DISABLED. canSendMessage() =', canSend, 'localExchanges =', localExchanges, 'tier =', tier);
       }
     }
 
