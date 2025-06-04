@@ -464,18 +464,8 @@
 
             // Enforce 4 user messages per exchange (not 8 total)
             if (currentExchangeMessages >= 4) {
-              console.log('[MuseMirror] 4-user-message limit reached. Ending exchange.');
-              const currentOpacity = window.getComputedStyle(cursor).opacity;
-              cursor.style.opacity = currentOpacity;
-              cursor.style.animation = 'none';
-              requestAnimationFrame(() => {
-                cursor.style.transition = 'opacity 5s ease-out';
-                cursor.style.opacity = '0';
-              });
-              hiddenInput.disabled = true;
-              hiddenInput.blur();
-              await onExchangeEnd();
-              return;
+              console.log('[MuseMirror] 4-user-message limit reached. Will end exchange after assistant response.');
+              // Do not end exchange here; let assistant response complete first
             }
 
             if (!canvasActivated) {
@@ -525,7 +515,11 @@
               conversation.prepend(responseItem);
               console.log('[MuseMirror] Assistant response added. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
 
-              // Do NOT increment currentExchangeMessages here!
+              // If this was the 4th user message, end the exchange after assistant response is displayed
+              if (currentExchangeMessages >= 4) {
+                console.log('[MuseMirror] Ending exchange after 4th assistant response.');
+                await onExchangeEnd();
+              }
 
               if (!canSendMessage()) {
                 settingsIcon.style.display = 'block';
