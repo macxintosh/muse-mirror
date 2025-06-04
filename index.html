@@ -298,6 +298,7 @@
     // --- DOMContentLoaded/Onload Handler ---
     window.onload = async function () {
       // Enhanced Supabase Auth event handler for debugging and session refresh
+      let initialSessionHandled = false;
       supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('[MuseMirror] Auth state changed:', event, session);
         if (event === 'TOKEN_REFRESHED') {
@@ -305,10 +306,33 @@
         }
         if (event === 'SIGNED_OUT') {
           console.warn('[MuseMirror] User was signed out unexpectedly.');
-          // Optionally, prompt user to sign in again or try to refresh session
         }
         if (event === 'INITIAL_SESSION') {
-          console.log('[MuseMirror] Initial session detected.');
+          initialSessionHandled = true;
+          if (session && session.user) {
+            user = session.user;
+            await fetchProfile();
+            console.log('[MuseMirror] INITIAL_SESSION: Authenticated user. tier =', tier, 'dailyExchanges =', dailyExchanges);
+            updateTierUI();
+            if (canSendMessage()) {
+              focusInput();
+            } else {
+              hiddenInput.disabled = true;
+            }
+          } else {
+            user = null;
+            profile = null;
+            tier = 'anonymous';
+            loadLocalExchanges();
+            resetSessionCounters();
+            console.log('[MuseMirror] INITIAL_SESSION: Anonymous user. localExchanges =', localExchanges);
+            updateTierUI();
+            if (canSendMessage()) {
+              focusInput();
+            } else {
+              hiddenInput.disabled = true;
+            }
+          }
         }
         if (event === 'PASSWORD_RECOVERY') {
           console.log('[MuseMirror] Password recovery event.');
@@ -318,31 +342,6 @@
         }
         if (event === 'USER_UPDATED') {
           console.log('[MuseMirror] User updated.');
-        }
-        // Existing logic for handling user state
-        if (session && session.user) {
-          user = session.user;
-          await fetchProfile();
-          console.log('[MuseMirror] Auth state change: Authenticated user. tier =', tier, 'dailyExchanges =', dailyExchanges);
-          updateTierUI();
-          if (canSendMessage()) {
-            focusInput();
-          } else {
-            hiddenInput.disabled = true;
-          }
-        } else {
-          user = null;
-          profile = null;
-          tier = 'anonymous';
-          loadLocalExchanges();
-          resetSessionCounters();
-          console.log('[MuseMirror] Auth state change: Anonymous user. localExchanges =', localExchanges);
-          updateTierUI();
-          if (canSendMessage()) {
-            focusInput();
-          } else {
-            hiddenInput.disabled = true;
-          }
         }
       });
 
@@ -366,34 +365,6 @@
       accountUpgrade = document.getElementById('account-upgrade');
       accountLogout = document.getElementById('account-logout');
       accountClose = document.getElementById('account-close');
-
-      // Check for existing session (magic link or previous login) FIRST
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('[MuseMirror] On load: session =', session);
-      if (session && session.user) {
-        user = session.user;
-        await fetchProfile();
-        console.log('[MuseMirror] On load: Authenticated user. tier =', tier, 'dailyExchanges =', dailyExchanges);
-        updateTierUI();
-        if (canSendMessage()) {
-          focusInput();
-        } else {
-          hiddenInput.disabled = true;
-        }
-      } else {
-        user = null;
-        profile = null;
-        tier = 'anonymous';
-        loadLocalExchanges();
-        resetSessionCounters();
-        console.log('[MuseMirror] On load: Anonymous user. localExchanges =', localExchanges);
-        updateTierUI();
-        if (canSendMessage()) {
-          focusInput();
-        } else {
-          hiddenInput.disabled = true;
-        }
-      }
 
       // Auth modal events
       authClose.onclick = hideAuthModal;
