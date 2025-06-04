@@ -446,9 +446,9 @@
       });
 
       document.addEventListener('click', (e) => {
-        if (e.target !== canvas && !isAnyModalOpen()) focusInput();
+        if (e.target !== canvas && !window.isAnyModalOpen()) focusInput();
       });
-      document.getElementById('input-line').addEventListener('click', () => { if (!isAnyModalOpen()) focusInput(); });
+      document.getElementById('input-line').addEventListener('click', () => { if (!window.isAnyModalOpen()) focusInput(); });
       hiddenInput.addEventListener('input', () => {
         displayedText.textContent = hiddenInput.value;
       });
@@ -620,8 +620,8 @@
     }
 
     function focusInput() {
-      console.log('[MuseMirror] focusInput: typeof isAnyModalOpen =', typeof isAnyModalOpen);
-      if (isAnyModalOpen()) {
+      console.log('[MuseMirror] focusInput: typeof window.isAnyModalOpen =', typeof window.isAnyModalOpen);
+      if (window.isAnyModalOpen()) {
         console.log('[MuseMirror] focusInput: Modal is open, not focusing main input.');
         return;
       }
