@@ -303,15 +303,26 @@
         if (session && session.user) {
           user = session.user;
           await fetchProfile();
-          hideAuthModal();
+          console.log('[MuseMirror] Auth state change: Authenticated user. tier =', tier, 'dailyExchanges =', dailyExchanges);
           updateTierUI();
-          focusInput();
+          if (canSendMessage()) {
+            focusInput();
+          } else {
+            hiddenInput.disabled = true;
+          }
         } else {
           user = null;
           profile = null;
           tier = 'anonymous';
+          loadLocalExchanges();
+          resetSessionCounters();
+          console.log('[MuseMirror] Auth state change: Anonymous user. localExchanges =', localExchanges);
           updateTierUI();
-          focusInput();
+          if (canSendMessage()) {
+            focusInput();
+          } else {
+            hiddenInput.disabled = true;
+          }
         }
       });
 
@@ -336,12 +347,33 @@
       accountLogout = document.getElementById('account-logout');
       accountClose = document.getElementById('account-close');
 
-      // Exchange tracking - ensure order
-      loadLocalExchanges();
-      resetSessionCounters();
-
-      // Debug logs for anonymous state
-      console.log('[MuseMirror] On load: localExchanges =', localExchanges, 'currentExchangeMessages =', currentExchangeMessages, 'canSendMessage =', canSendMessage());
+      // Check for existing session (magic link or previous login) FIRST
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[MuseMirror] On load: session =', session);
+      if (session && session.user) {
+        user = session.user;
+        await fetchProfile();
+        console.log('[MuseMirror] On load: Authenticated user. tier =', tier, 'dailyExchanges =', dailyExchanges);
+        updateTierUI();
+        if (canSendMessage()) {
+          focusInput();
+        } else {
+          hiddenInput.disabled = true;
+        }
+      } else {
+        user = null;
+        profile = null;
+        tier = 'anonymous';
+        loadLocalExchanges();
+        resetSessionCounters();
+        console.log('[MuseMirror] On load: Anonymous user. localExchanges =', localExchanges);
+        updateTierUI();
+        if (canSendMessage()) {
+          focusInput();
+        } else {
+          hiddenInput.disabled = true;
+        }
+      }
 
       // Auth modal events
       authClose.onclick = hideAuthModal;
@@ -376,32 +408,6 @@
         // Placeholder: Integrate Stripe here
         alert('Upgrade to premium coming soon.');
       };
-
-      // On load, check for existing session (magic link or previous login)
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('[MuseMirror] On load: session =', session);
-      if (session && session.user) {
-        user = session.user;
-        await fetchProfile();
-        console.log('[MuseMirror] Authenticated user loaded on refresh. tier =', tier, 'dailyExchanges =', dailyExchanges);
-        updateTierUI();
-        if (canSendMessage()) {
-          focusInput();
-        } else {
-          hiddenInput.disabled = true;
-        }
-      } else {
-        user = null;
-        profile = null;
-        tier = 'anonymous';
-        console.log('[MuseMirror] No authenticated user on refresh.');
-        updateTierUI();
-        if (canSendMessage()) {
-          focusInput();
-        } else {
-          hiddenInput.disabled = true;
-        }
-      }
 
       // Settings icon click
       settingsIcon.onclick = () => {
