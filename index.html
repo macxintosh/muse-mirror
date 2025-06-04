@@ -532,6 +532,8 @@
         profile = null;
         tier = 'anonymous';
         updateTierUI();
+        // Automatic page refresh for clean anonymous state
+        window.location.reload();
       };
       accountUpgrade.onclick = () => {
         // Placeholder: Integrate Stripe here
