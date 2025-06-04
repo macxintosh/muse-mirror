@@ -245,10 +245,11 @@
       authModal.style.display = 'flex';
       authEmail.value = '';
       authMessage.textContent = '';
-      authEmail.focus();
+      setTimeout(() => { authEmail.focus(); }, 0);
     }
     function hideAuthModal() {
       authModal.style.display = 'none';
+      setTimeout(() => { focusInput(); }, 0);
     }
 
     // --- Exchange Tracking ---
@@ -390,8 +391,8 @@
       };
 
       // Account modal events
-      accountClose.onclick = () => { accountModal.style.display = 'none'; };
-      accountModal.onclick = (e) => { if (e.target === accountModal) accountModal.style.display = 'none'; };
+      accountClose.onclick = () => { accountModal.style.display = 'none'; setTimeout(() => { focusInput(); }, 0); };
+      accountModal.onclick = (e) => { if (e.target === accountModal) { accountModal.style.display = 'none'; setTimeout(() => { focusInput(); }, 0); } };
       accountLogout.onclick = async () => {
         await supabase.auth.signOut();
         accountModal.style.display = 'none';
@@ -433,10 +434,16 @@
         }
       });
 
+      // Utility to check if any modal is open
+      function isAnyModalOpen() {
+        return (authModal && authModal.style.display === 'flex') ||
+               (accountModal && accountModal.style.display === 'flex');
+      }
+
       document.addEventListener('click', (e) => {
-        if (e.target !== canvas) focusInput();
+        if (e.target !== canvas && !isAnyModalOpen()) focusInput();
       });
-      document.getElementById('input-line').addEventListener('click', focusInput);
+      document.getElementById('input-line').addEventListener('click', () => { if (!isAnyModalOpen()) focusInput(); });
       hiddenInput.addEventListener('input', () => {
         displayedText.textContent = hiddenInput.value;
       });
@@ -608,6 +615,10 @@
     }
 
     function focusInput() {
+      if (isAnyModalOpen()) {
+        console.log('[MuseMirror] focusInput: Modal is open, not focusing main input.');
+        return;
+      }
       hiddenInput.disabled = false;
       hiddenInput.focus();
       console.log('[MuseMirror] focusInput: Input ENABLED (graceful limit mode). localExchanges =', localExchanges, 'tier =', tier);
