@@ -291,7 +291,15 @@
     // --- UI State Management ---
     function updateUIState() {
       const canSend = canSendMessage();
-      console.log('[MuseMirror] updateUIState: canSend =', canSend, 'tier =', tier, 'localExchanges =', localExchanges, 'dailyExchanges =', dailyExchanges);
+      console.log('[MuseMirror] updateUIState:', {
+        canSend,
+        currentExchangeMessages,
+        exchangeCount,
+        tier,
+        dailyExchanges,
+        localExchanges,
+        cursorClasses: cursor.classList.toString()
+      });
       
       // Update cursor state
       if (canSend) {
@@ -312,9 +320,17 @@
     }
 
     async function onExchangeEnd() {
+      console.log('[MuseMirror] onExchangeEnd called:', {
+        currentExchangeMessages,
+        exchangeCount,
+        tier,
+        dailyExchanges,
+        localExchanges
+      });
+
       currentExchangeMessages = 0;
       exchangeCount++;
-      console.log('[MuseMirror] Exchange ended. exchangeCount =', exchangeCount, 'tier =', tier);
+      
       if (tier === 'anonymous') {
         incLocalExchanges();
         console.log('[MuseMirror] Anonymous: localExchanges =', localExchanges);
@@ -323,15 +339,29 @@
         await fetchProfile();
         console.log('[MuseMirror] Authenticated: dailyExchanges =', dailyExchanges, 'tier =', tier);
       }
+      
       if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
           (tier === 'free' && dailyExchanges >= EXCHANGES.free) ||
           (tier === 'premium' && dailyExchanges >= EXCHANGES.premium)) {
         settingsIcon.style.display = 'block';
       }
+
+      console.log('[MuseMirror] Calling updateUIState after onExchangeEnd');
       updateUIState();
     }
 
     function canSendMessage() {
+      console.log('[MuseMirror] canSendMessage check:', {
+        tier,
+        currentExchangeMessages,
+        MESSAGES_PER_EXCHANGE,
+        dailyExchanges,
+        localExchanges,
+        EXCHANGES: EXCHANGES[tier],
+        canSendDaily: tier === 'anonymous' ? localExchanges < EXCHANGES.anonymous : dailyExchanges < EXCHANGES[tier],
+        canSendExchange: currentExchangeMessages < MESSAGES_PER_EXCHANGE
+      });
+
       if (tier === 'anonymous') {
         return localExchanges < EXCHANGES.anonymous && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
       } else if (tier === 'free') {
@@ -455,16 +485,27 @@
               return;
             }
 
-            // If in an active exchange, proceed as normal
+            // If in an active exchange but over limit, do nothing (exchange will end as usual)
             if (!canSendMessage()) {
-              // If in the middle of an exchange but over limit, do nothing (exchange will end as usual)
+              console.log('[MuseMirror] Cannot send message - over limit:', {
+                currentExchangeMessages,
+                tier,
+                dailyExchanges,
+                localExchanges
+              });
               return;
             }
 
             currentExchangeMessages++;
-            console.log('[MuseMirror] User message sent. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
+            console.log('[MuseMirror] User message sent:', {
+              messageCount,
+              currentExchangeMessages,
+              tier,
+              dailyExchanges,
+              localExchanges
+            });
 
-            // Enforce 4 user messages per exchange (not 8 total)
+            // Enforce 4 user messages per exchange
             if (currentExchangeMessages >= 4) {
               console.log('[MuseMirror] 4-user-message limit reached. Will end exchange after assistant response.');
               // Do not end exchange here; let assistant response complete first
@@ -515,7 +556,13 @@
               responseItem.classList.add('conversation-item', 'response-text');
               responseItem.textContent = responseText;
               conversation.prepend(responseItem);
-              console.log('[MuseMirror] Assistant response added. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
+              console.log('[MuseMirror] Assistant response added:', {
+                messageCount,
+                currentExchangeMessages,
+                tier,
+                dailyExchanges,
+                localExchanges
+              });
 
               // If this was the 4th user message, end the exchange after assistant response is displayed
               if (currentExchangeMessages >= 4) {
@@ -523,9 +570,8 @@
                 await onExchangeEnd();
               }
 
-              if (!canSendMessage()) {
-                settingsIcon.style.display = 'block';
-              }
+              // Update UI state after each message
+              updateUIState();
             }, 500);
           }, 500);
         }
