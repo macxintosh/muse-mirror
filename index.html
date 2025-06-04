@@ -319,6 +319,51 @@
       }
     }
 
+    function canSendMessage() {
+      // Check daily exchange limits first
+      const dailyLimitReached = tier === 'anonymous' 
+        ? localExchanges >= EXCHANGES.anonymous
+        : dailyExchanges >= EXCHANGES[tier];
+
+      // Check per-exchange message limit
+      const exchangeLimitReached = currentExchangeMessages >= MESSAGES_PER_EXCHANGE;
+
+      // Log the detailed state and checks
+      console.log('[MuseMirror] canSendMessage check:', {
+        // Current state
+        tier,
+        currentExchangeMessages,
+        exchangeCount,
+        dailyExchanges,
+        localExchanges,
+        MESSAGES_PER_EXCHANGE,
+        EXCHANGES: EXCHANGES[tier],
+        
+        // Limit checks
+        dailyLimitReached,
+        exchangeLimitReached,
+        
+        // Detailed breakdown
+        dailyLimitCheck: {
+          anonymous: tier === 'anonymous' ? `${localExchanges} >= ${EXCHANGES.anonymous}` : 'N/A',
+          free: tier === 'free' ? `${dailyExchanges} >= ${EXCHANGES.free}` : 'N/A',
+          premium: tier === 'premium' ? `${dailyExchanges} >= ${EXCHANGES.premium}` : 'N/A'
+        },
+        exchangeLimitCheck: `${currentExchangeMessages} >= ${MESSAGES_PER_EXCHANGE}`,
+        
+        // Final result
+        canSend: !dailyLimitReached && !exchangeLimitReached,
+        reason: dailyLimitReached ? 'Daily limit reached' : 
+                exchangeLimitReached ? 'Exchange message limit reached' : 
+                'Can send message'
+      });
+
+      // For premium users with 6 exchanges, this should return true since 6 < 10
+      // For free users with 6 exchanges, this should return false since 6 >= 3
+      // For anonymous users with 6 exchanges, this should return false since 6 >= 3
+      return !dailyLimitReached && !exchangeLimitReached;
+    }
+
     async function onExchangeEnd() {
       console.log('[MuseMirror] onExchangeEnd called:', {
         currentExchangeMessages,
@@ -358,48 +403,6 @@
 
       console.log('[MuseMirror] Calling updateUIState after onExchangeEnd');
       updateUIState();
-    }
-
-    function canSendMessage() {
-      // Check daily exchange limits first
-      const dailyLimitReached = tier === 'anonymous' 
-        ? localExchanges >= EXCHANGES.anonymous
-        : dailyExchanges >= EXCHANGES[tier];
-
-      // Check per-exchange message limit
-      const exchangeLimitReached = currentExchangeMessages >= MESSAGES_PER_EXCHANGE;
-
-      console.log('[MuseMirror] canSendMessage check:', {
-        // Current state
-        tier,
-        currentExchangeMessages,
-        exchangeCount,
-        dailyExchanges,
-        localExchanges,
-        MESSAGES_PER_EXCHANGE,
-        EXCHANGES: EXCHANGES[tier],
-        
-        // Limit checks
-        dailyLimitReached,
-        exchangeLimitReached,
-        
-        // Detailed breakdown
-        dailyLimitCheck: {
-          anonymous: tier === 'anonymous' ? `${localExchanges} >= ${EXCHANGES.anonymous}` : 'N/A',
-          free: tier === 'free' ? `${dailyExchanges} >= ${EXCHANGES.free}` : 'N/A',
-          premium: tier === 'premium' ? `${dailyExchanges} >= ${EXCHANGES.premium}` : 'N/A'
-        },
-        exchangeLimitCheck: `${currentExchangeMessages} >= ${MESSAGES_PER_EXCHANGE}`,
-        
-        // Final result
-        canSend: !dailyLimitReached && !exchangeLimitReached,
-        reason: dailyLimitReached ? 'Daily limit reached' : 
-                exchangeLimitReached ? 'Exchange message limit reached' : 
-                'Can send message'
-      });
-
-      // Return false if either limit is reached
-      return !dailyLimitReached && !exchangeLimitReached;
     }
 
     // --- DOMContentLoaded/Onload Handler ---
@@ -718,12 +721,14 @@
 
     // --- Update Profile Exchange Count ---
     async function incProfileExchanges() {
+      const before = dailyExchanges;
       dailyExchanges++;
       console.log('[MuseMirror] Incrementing daily exchanges:', {
-        before: dailyExchanges - 1,
+        before,
         after: dailyExchanges,
         tier,
-        EXCHANGES: EXCHANGES[tier]
+        EXCHANGES: EXCHANGES[tier],
+        limitReached: dailyExchanges >= EXCHANGES[tier]
       });
       await supabase.from('profiles').update({ 
         daily_exchanges: dailyExchanges, 
