@@ -297,9 +297,29 @@
 
     // --- DOMContentLoaded/Onload Handler ---
     window.onload = async function () {
-      // Register auth state change handler FIRST
+      // Enhanced Supabase Auth event handler for debugging and session refresh
       supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('[MuseMirror] Auth state changed:', event, session);
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('[MuseMirror] Session token refreshed.');
+        }
+        if (event === 'SIGNED_OUT') {
+          console.warn('[MuseMirror] User was signed out unexpectedly.');
+          // Optionally, prompt user to sign in again or try to refresh session
+        }
+        if (event === 'INITIAL_SESSION') {
+          console.log('[MuseMirror] Initial session detected.');
+        }
+        if (event === 'PASSWORD_RECOVERY') {
+          console.log('[MuseMirror] Password recovery event.');
+        }
+        if (event === 'SIGNED_IN') {
+          console.log('[MuseMirror] User signed in.');
+        }
+        if (event === 'USER_UPDATED') {
+          console.log('[MuseMirror] User updated.');
+        }
+        // Existing logic for handling user state
         if (session && session.user) {
           user = session.user;
           await fetchProfile();
