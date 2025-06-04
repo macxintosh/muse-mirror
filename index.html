@@ -373,6 +373,14 @@
       accountLogout = document.getElementById('account-logout');
       accountClose = document.getElementById('account-close');
 
+      // Utility to check if any modal is open
+      function isAnyModalOpen() {
+        return (
+          (authModal && window.getComputedStyle(authModal).display !== 'none') ||
+          (accountModal && window.getComputedStyle(accountModal).display !== 'none')
+        );
+      }
+
       // Auth modal events
       authClose.onclick = hideAuthModal;
       authModal.onclick = (e) => { if (e.target === authModal) hideAuthModal(); };
@@ -433,14 +441,6 @@
           setupCanvas();
         }
       });
-
-      // Utility to check if any modal is open
-      function isAnyModalOpen() {
-        return (
-          (authModal && window.getComputedStyle(authModal).display !== 'none') ||
-          (accountModal && window.getComputedStyle(accountModal).display !== 'none')
-        );
-      }
 
       document.addEventListener('click', (e) => {
         if (e.target !== canvas && !isAnyModalOpen()) focusInput();
