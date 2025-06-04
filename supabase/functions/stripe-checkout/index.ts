@@ -21,14 +21,27 @@ const supabaseClient = createClient(
 
 console.log("Hello from Functions!")
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   try {
     // Get the authorization header from the request
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
-        { status: 401 }
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401 
+        }
       )
     }
 
@@ -40,7 +53,10 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
-        { status: 401 }
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401 
+        }
       )
     }
 
@@ -54,7 +70,7 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/account?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${req.headers.get('origin')}?upgrade=success`,
       cancel_url: `${req.headers.get('origin')}/account`,
       customer_email: user.email,
       metadata: {
@@ -65,14 +81,17 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ url: session.url }),
       { 
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
       }
     )
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 400 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400 
+      }
     )
   }
 })

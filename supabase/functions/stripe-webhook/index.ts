@@ -7,7 +7,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno'
+import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno&deno-std=0.168.0'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2023-10-16',
@@ -21,18 +21,31 @@ const supabaseClient = createClient(
 
 console.log("Hello from Functions!")
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   const signature = req.headers.get('stripe-signature')
   if (!signature) {
     return new Response(
       JSON.stringify({ error: 'No signature' }),
-      { status: 400 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400 
+      }
     )
   }
 
   try {
     const body = await req.text()
-    const event = stripe.webhooks.constructEvent(
+    const event = await stripe.webhooks.constructEventAsync(
       body,
       signature,
       Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
@@ -47,7 +60,10 @@ serve(async (req) => {
           console.error('No userId found in session metadata:', session)
           return new Response(
             JSON.stringify({ error: 'No userId in session metadata' }),
-            { status: 400 }
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400 
+            }
           )
         }
 
@@ -73,7 +89,10 @@ serve(async (req) => {
           console.error('Failed to update profile:', error)
           return new Response(
             JSON.stringify({ error: 'Failed to update profile' }),
-            { status: 500 }
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500 
+            }
           )
         }
 
@@ -107,12 +126,18 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ received: true }),
-      { status: 200 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
     )
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 400 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400 
+      }
     )
   }
 })
