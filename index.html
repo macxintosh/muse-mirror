@@ -210,7 +210,7 @@
     let localExchanges = 0;
     let localLastDate = null;
     const EXCHANGES = { anonymous: 3, free: 3, premium: 10 };
-    const MESSAGES_PER_EXCHANGE = 8;
+    const MESSAGES_PER_EXCHANGE = 4;
     let isDrawing = false;
     let lastX = 0;
     let lastY = 0;
@@ -351,6 +351,14 @@
     }
 
     function canSendMessage() {
+      // Check daily exchange limits first
+      const dailyLimitReached = tier === 'anonymous' 
+        ? localExchanges >= EXCHANGES.anonymous
+        : dailyExchanges >= EXCHANGES[tier];
+
+      // Check per-exchange message limit
+      const exchangeLimitReached = currentExchangeMessages >= MESSAGES_PER_EXCHANGE;
+
       console.log('[MuseMirror] canSendMessage check:', {
         tier,
         currentExchangeMessages,
@@ -358,18 +366,13 @@
         dailyExchanges,
         localExchanges,
         EXCHANGES: EXCHANGES[tier],
-        canSendDaily: tier === 'anonymous' ? localExchanges < EXCHANGES.anonymous : dailyExchanges < EXCHANGES[tier],
-        canSendExchange: currentExchangeMessages < MESSAGES_PER_EXCHANGE
+        dailyLimitReached,
+        exchangeLimitReached,
+        canSend: !dailyLimitReached && !exchangeLimitReached
       });
 
-      if (tier === 'anonymous') {
-        return localExchanges < EXCHANGES.anonymous && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
-      } else if (tier === 'free') {
-        return dailyExchanges < EXCHANGES.free && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
-      } else if (tier === 'premium') {
-        return dailyExchanges < EXCHANGES.premium && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
-      }
-      return false;
+      // Return false if either limit is reached
+      return !dailyLimitReached && !exchangeLimitReached;
     }
 
     // --- DOMContentLoaded/Onload Handler ---
