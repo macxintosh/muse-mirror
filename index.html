@@ -163,7 +163,11 @@
       <div id="auth-modal-content">
         <h2 style="font-size:1.1em; font-weight:400; margin-bottom:18px; color:#222;">Sign in to continue</h2>
         <input id="auth-email" type="email" placeholder="your@email.com" style="font-size:1em; padding:8px 12px; border:1px solid #ddd; border-radius:5px; outline:none; margin-bottom:12px; width:100%;" />
-        <button id="auth-send-link" style="font-size:1em; padding:8px 0; border:none; background:#222; color:white; border-radius:5px; width:100%; cursor:pointer;">Send magic link</button>
+        <button id="auth-send-link" style="font-size:1em; padding:8px 0; border:none; background:#222; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:12px;">Send magic link</button>
+        <div id="auth-otp-section" style="display:none; margin-bottom:12px;">
+          <input id="auth-otp" type="text" placeholder="Enter 6-digit code" maxlength="6" style="font-size:1em; padding:8px 12px; border:1px solid #ddd; border-radius:5px; outline:none; margin-bottom:8px; width:100%;" />
+          <button id="auth-verify-otp" style="font-size:1em; padding:8px 0; border:none; background:#333; color:white; border-radius:5px; width:100%; cursor:pointer;">Verify code</button>
+        </div>
         <div id="auth-message" style="margin-top:12px; font-size:0.95em; color:#444; min-height:1.2em;"></div>
       </div>
       <button id="auth-close" style="margin-top:18px; background:none; border:none; color:#888; font-size:0.95em; cursor:pointer;">Cancel</button>
@@ -216,6 +220,7 @@
     let settingsIcon, authModal, authEmail, authSendLink, authMessage, authClose;
     let hiddenInput, displayedText, conversation, cursor, canvasContainer, canvas, ctx;
     let accountModal, accountEmail, accountTier, accountUpgrade, accountLogout, accountClose, accountUsage;
+    let authOtpSection, authOtp, authVerifyOtp;
 
     const fallbackResponses = [
       "My reflections are caught somewhere between worlds. Try again soon."
@@ -392,6 +397,9 @@
       authSendLink = document.getElementById('auth-send-link');
       authMessage = document.getElementById('auth-message');
       authClose = document.getElementById('auth-close');
+      authOtpSection = document.getElementById('auth-otp-section');
+      authOtp = document.getElementById('auth-otp');
+      authVerifyOtp = document.getElementById('auth-verify-otp');
       hiddenInput = document.getElementById('hidden-input');
       displayedText = document.getElementById('displayed-text');
       conversation = document.getElementById('conversation');
@@ -528,13 +536,44 @@
         if (!email) { authMessage.textContent = 'Enter your email.'; return; }
         authSendLink.disabled = true;
         authMessage.textContent = 'Sending magic link...';
-        const { error } = await supabase.auth.signInWithOtp({ email });
+        const { error } = await supabase.auth.signInWithOtp({ 
+          email,
+          options: {
+            shouldCreateUser: true
+          }
+        });
         if (error) {
           authMessage.textContent = 'Error: ' + error.message;
         } else {
-          authMessage.textContent = 'Check your email for the link.';
+          authMessage.textContent = 'Check your email for the link or enter the 6-digit code below.';
+          authOtpSection.style.display = 'block';
         }
         authSendLink.disabled = false;
+      };
+
+      authVerifyOtp.onclick = async () => {
+        const email = authEmail.value.trim();
+        const token = authOtp.value.trim();
+        if (!email || !token) { 
+          authMessage.textContent = 'Enter both email and code.'; 
+          return; 
+        }
+        authVerifyOtp.disabled = true;
+        authMessage.textContent = 'Verifying...';
+        
+        const { data, error } = await supabase.auth.verifyOtp({
+          email,
+          token,
+          type: 'email'
+        });
+        
+        if (error) {
+          authMessage.textContent = 'Invalid code. Try again.';
+        } else {
+          authMessage.textContent = 'Success! Signing you in...';
+          hideAuthModal();
+        }
+        authVerifyOtp.disabled = false;
       };
 
       // Account modal events
