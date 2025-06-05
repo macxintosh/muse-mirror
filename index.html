@@ -141,6 +141,18 @@
     .canvas-visible {
       opacity: 1 !important;
     }
+
+    #footer-hint {
+      position: fixed;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: #ccc;
+      opacity: 0.6;
+      font-weight: 300;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -775,5 +787,6 @@
       }
     }
   </script>
+  <div id="footer-hint">each visit, a new reflection</div>
 </body>
 </html>
