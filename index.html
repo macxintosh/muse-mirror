@@ -691,8 +691,9 @@
           settingsIcon.style.display = 'none';
           exportButton.style.display = 'none';
 
-          // Get the conversation and canvas container
-          const conversationRect = conversation.getBoundingClientRect();
+          // Get the fixed center container
+          const fixedCenter = document.getElementById('fixed-center');
+          const fixedCenterRect = fixedCenter.getBoundingClientRect();
           const canvasRect = canvasContainer.getBoundingClientRect();
           
           // Create a container for the screenshot
@@ -702,10 +703,16 @@
           container.style.top = '-9999px';
           document.body.appendChild(container);
 
-          // Clone the conversation and canvas
-          const conversationClone = conversation.cloneNode(true);
+          // Clone the fixed center container and canvas
+          const fixedCenterClone = fixedCenter.cloneNode(true);
           const canvasClone = canvasContainer.cloneNode(true);
-          container.appendChild(conversationClone);
+          
+          // Temporarily change conversation flex direction
+          const conversationClone = fixedCenterClone.querySelector('#conversation');
+          const originalFlexDirection = conversationClone.style.flexDirection;
+          conversationClone.style.flexDirection = 'column';
+          
+          container.appendChild(fixedCenterClone);
           container.appendChild(canvasClone);
 
           // Set up the canvas clone
@@ -718,8 +725,8 @@
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            height: canvasRect.bottom - conversationRect.top,
-            width: Math.max(conversationRect.width, canvasRect.width),
+            height: canvasRect.bottom - fixedCenterRect.top,
+            width: Math.max(fixedCenterRect.width, canvasRect.width),
             x: 0,
             y: 0
           });
