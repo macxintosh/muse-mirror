@@ -51,6 +51,7 @@
       height: 24px;
       background-color: #333;
       opacity: 0.2;
+      transition: opacity 0.5s ease-out;
     }
 
     #cursor.enabled {
@@ -290,8 +291,12 @@
     
     // --- UI State Management ---
     function updateUIState() {
-      const canSend = canSendMessage();
+      // On fresh page load (exchangeCount === 0), always enable input
+      const isFreshPage = exchangeCount === 0;
+      const canSend = isFreshPage ? true : canSendMessage();
+      
       console.log('[MuseMirror] updateUIState:', {
+        isFreshPage,
         canSend,
         currentExchangeMessages,
         exchangeCount,
@@ -301,13 +306,21 @@
         cursorClasses: cursor.classList.toString()
       });
       
-      // Update cursor state
+      // Update cursor state with smooth transition
       if (canSend) {
-        cursor.classList.add('enabled');
+        // Remove disabled first to allow animation to start
         cursor.classList.remove('disabled');
+        // Small delay to ensure transition
+        requestAnimationFrame(() => {
+          cursor.classList.add('enabled');
+        });
       } else {
+        // Remove enabled first to stop animation
         cursor.classList.remove('enabled');
-        cursor.classList.add('disabled');
+        // Small delay to ensure transition
+        requestAnimationFrame(() => {
+          cursor.classList.add('disabled');
+        });
       }
 
       // Update input state
@@ -527,6 +540,7 @@
               responseItem.textContent = getLimitMessage();
               conversation.prepend(responseItem);
               console.log('[MuseMirror] Over daily limit after refresh: showed poetic assistant message.');
+              // Keep input enabled since this is a fresh page
               return;
             }
 
