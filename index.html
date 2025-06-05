@@ -701,7 +701,11 @@
           const blob = new Blob([textContent], { type: 'text/plain' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.download = `muse-mirror-${new Date().toISOString().slice(0,10)}.txt`;
+          const now = new Date();
+          const timestamp = now.toISOString().slice(0,10) + '-' + 
+            String(now.getHours()).padStart(2, '0') + 
+            String(now.getMinutes()).padStart(2, '0');
+          link.download = `muse-mirror-${timestamp}.txt`;
           link.href = url;
           link.click();
           
