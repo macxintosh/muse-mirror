@@ -663,7 +663,7 @@
           const { url, error } = await response.json();
           if (error) throw new Error(error);
           
-          window.open(url, '_blank');
+          window.location.href = url;
         } catch (error) {
           console.error('Error:', error);
           alert('Failed to open subscription management. Please try again.');
