@@ -430,7 +430,20 @@
 
       // Set up event listeners
       document.addEventListener('click', (e) => {
-        if (e.target !== canvas && !window.isAnyModalOpen()) focusInput();
+        // Check if mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+          // On mobile, only focus if clicking directly on input line elements
+          if ((e.target === displayedText || e.target === cursor || e.target.closest('#input-line')) && !window.isAnyModalOpen()) {
+            focusInput();
+          }
+        } else {
+          // On desktop, allow clicking anywhere except canvas
+          if (e.target !== canvas && !window.isAnyModalOpen()) {
+            focusInput();
+          }
+        }
       });
       document.getElementById('input-line').addEventListener('click', () => { if (!window.isAnyModalOpen()) focusInput(); });
       hiddenInput.addEventListener('input', () => {
