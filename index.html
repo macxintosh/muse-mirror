@@ -149,7 +149,6 @@
       right: 24px;
       z-index: 10;
       cursor: pointer;
-      opacity: 0;
       transition: opacity 0.8s ease-in;
     }
 
@@ -430,6 +429,9 @@
       accountLogout = document.getElementById('account-logout');
       accountClose = document.getElementById('account-close');
       accountUsage = document.getElementById('account-usage');
+
+      // Set initial opacity for settings icon
+      settingsIcon.style.opacity = '0';
 
       // Set up event listeners
       document.addEventListener('click', (e) => {
