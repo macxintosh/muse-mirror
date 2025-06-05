@@ -206,8 +206,16 @@
     <canvas id="drawing-canvas"></canvas>
     <div id="canvas-gradient"></div>
   </div>
+  <button id="export-button" style="display:none; position:fixed; top:24px; right:64px; z-index:10; cursor:pointer; background:none; border:none; padding:0;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+  </button>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <script>
     const supabaseUrl = 'https://grtbltrjiluriwfjcfva.supabase.co';
     const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdydGJsdHJqaWx1cml3ZmpjZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg5NzUzNTAsImV4cCI6MjA2NDU1MTM1MH0.wfPdmrheZ45DPAJqYoO0v8yFnMrt4eX5w6g4EzhBPB4';
@@ -237,6 +245,7 @@
     let hiddenInput, displayedText, conversation, cursor, canvasContainer, canvas, ctx;
     let accountModal, accountEmail, accountTier, accountUpgrade, accountManage, accountLogout, accountClose, accountUsage;
     let authOtpSection, authOtp, authVerifyOtp;
+    let exportButton;
 
     const fallbackResponses = [
       "My reflections are caught somewhere between worlds. Try again soon."
@@ -317,6 +326,10 @@
           (tier === 'free' && dailyExchanges >= EXCHANGES.free) ||
           (tier === 'premium' && dailyExchanges >= EXCHANGES.premium)) {
         settingsIcon.style.display = 'block';
+      }
+      // Show export button for premium users
+      if (tier === 'premium') {
+        exportButton.style.display = 'block';
       }
       // Always disable input and cursor after every exchange
       const currentOpacity = window.getComputedStyle(cursor).opacity;
@@ -431,6 +444,7 @@
       accountLogout = document.getElementById('account-logout');
       accountClose = document.getElementById('account-close');
       accountUsage = document.getElementById('account-usage');
+      exportButton = document.getElementById('export-button');
 
       // Set up event listeners
       document.addEventListener('click', (e) => {
@@ -667,6 +681,67 @@
         } catch (error) {
           console.error('Error:', error);
           alert('Failed to open subscription management. Please try again.');
+        }
+      };
+
+      // Export functionality
+      exportButton.onclick = async () => {
+        try {
+          // Hide UI elements temporarily
+          settingsIcon.style.display = 'none';
+          exportButton.style.display = 'none';
+
+          // Get the conversation and canvas container
+          const conversationRect = conversation.getBoundingClientRect();
+          const canvasRect = canvasContainer.getBoundingClientRect();
+          
+          // Create a container for the screenshot
+          const container = document.createElement('div');
+          container.style.position = 'absolute';
+          container.style.left = '-9999px';
+          container.style.top = '-9999px';
+          document.body.appendChild(container);
+
+          // Clone the conversation and canvas
+          const conversationClone = conversation.cloneNode(true);
+          const canvasClone = canvasContainer.cloneNode(true);
+          container.appendChild(conversationClone);
+          container.appendChild(canvasClone);
+
+          // Set up the canvas clone
+          const canvasCloneElement = canvasClone.querySelector('canvas');
+          const ctxClone = canvasCloneElement.getContext('2d');
+          ctxClone.drawImage(canvas, 0, 0);
+
+          // Take the screenshot
+          const screenshot = await html2canvas(container, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            height: canvasRect.bottom - conversationRect.top,
+            width: Math.max(conversationRect.width, canvasRect.width),
+            x: 0,
+            y: 0
+          });
+
+          // Clean up
+          document.body.removeChild(container);
+
+          // Show UI elements again
+          settingsIcon.style.display = 'block';
+          exportButton.style.display = 'block';
+
+          // Download the screenshot
+          const link = document.createElement('a');
+          link.download = `muse-mirror-${new Date().toISOString().slice(0,10)}.png`;
+          link.href = screenshot.toDataURL('image/png');
+          link.click();
+        } catch (error) {
+          console.error('Error exporting:', error);
+          alert('Failed to export conversation. Please try again.');
+          // Make sure UI elements are visible again
+          settingsIcon.style.display = 'block';
+          exportButton.style.display = 'block';
         }
       };
 
