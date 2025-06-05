@@ -141,19 +141,6 @@
     .canvas-visible {
       opacity: 1 !important;
     }
-
-    #settings-icon {
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      z-index: 10;
-      cursor: pointer;
-      transition: opacity 0.8s ease-in;
-    }
-
-    .settings-visible {
-      opacity: 1;
-    }
   </style>
 </head>
 <body>
@@ -278,11 +265,6 @@
       authModal.style.display = 'flex';
       authEmail.value = '';
       authMessage.textContent = '';
-      if (tier === 'anonymous') {
-        document.querySelector('#auth-modal-content h2').textContent = `You've used ${localExchanges} of 3 exchanges today. Sign up to continue.`;
-      } else {
-        document.querySelector('#auth-modal-content h2').textContent = 'Sign in to continue';
-      }
       setTimeout(() => { authEmail.focus(); }, 0);
     }
     function hideAuthModal() {
@@ -305,9 +287,6 @@
       if (tier === 'anonymous') {
         incLocalExchanges();
         console.log('[MuseMirror] Anonymous: localExchanges =', localExchanges);
-        if (localExchanges === 1) {
-          settingsIcon.classList.add('settings-visible');
-        }
       } else {
         await incProfileExchanges();
         await fetchProfile();
@@ -316,7 +295,7 @@
       if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
           (tier === 'free' && dailyExchanges >= EXCHANGES.free) ||
           (tier === 'premium' && dailyExchanges >= EXCHANGES.premium)) {
-        settingsIcon.classList.add('settings-visible');
+        settingsIcon.style.display = 'block';
       }
       // Always disable input and cursor after every exchange
       const currentOpacity = window.getComputedStyle(cursor).opacity;
@@ -428,9 +407,6 @@
       accountClose = document.getElementById('account-close');
       accountUsage = document.getElementById('account-usage');
 
-      // Set initial opacity for settings icon
-      settingsIcon.style.opacity = '0';
-
       // Set up event listeners
       document.addEventListener('click', (e) => {
         if (e.target !== canvas && !window.isAnyModalOpen()) focusInput();
@@ -537,7 +513,7 @@
               }
 
               if (!canSendMessage()) {
-                settingsIcon.classList.add('settings-visible');
+                settingsIcon.style.display = 'block';
               }
             }, 500);
           }, 500);
@@ -677,8 +653,6 @@
 
     // --- UI Tier State ---
     function updateTierUI() {
-      console.log('[MuseMirror] updateTierUI called, tier:', tier, 'localExchanges:', localExchanges);
-      
       // Update account modal content
       if (accountEmail) {
         accountEmail.textContent = user?.email || '';
@@ -702,16 +676,13 @@
       // 3. SHOW for anonymous users after their first exchange
       if (tier === 'anonymous') {
         if (localExchanges > 0) {
-          settingsIcon.classList.add('settings-visible');
-          console.log('[MuseMirror] Adding settings-visible class for anonymous user with exchanges');
+          settingsIcon.style.display = 'block';
         } else {
-          settingsIcon.classList.remove('settings-visible');
-          console.log('[MuseMirror] Removing settings-visible class for fresh anonymous user');
+          settingsIcon.style.display = 'none';
         }
       } else {
         // Authenticated (free or premium)
-        settingsIcon.classList.add('settings-visible');
-        console.log('[MuseMirror] Adding settings-visible class for authenticated user');
+        settingsIcon.style.display = 'block';
       }
     }
 
