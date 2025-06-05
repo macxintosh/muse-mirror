@@ -689,12 +689,12 @@
           // Get all conversation items from the current exchange
           const items = Array.from(conversation.children);
           
-          // Format the conversation as text
+          // Format the conversation as text (reverse array to get chronological order)
           let textContent = '';
-          items.forEach((item, index) => {
+          items.reverse().forEach((item) => {
             const isUser = item.classList.contains('user-text');
             const prefix = isUser ? 'You' : 'Muse Mirror';
-            textContent += `${prefix}\n${item.textContent}\n\n`;
+            textContent += `${prefix}: ${item.textContent}\n\n\n`;
           });
 
           // Create and download the text file
