@@ -141,6 +141,21 @@
     .canvas-visible {
       opacity: 1 !important;
     }
+
+    #settings-icon {
+      display: none;
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 10;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.8s ease-in;
+    }
+
+    .settings-visible {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -265,6 +280,11 @@
       authModal.style.display = 'flex';
       authEmail.value = '';
       authMessage.textContent = '';
+      if (tier === 'anonymous') {
+        document.querySelector('#auth-modal-content h2').textContent = `You've used ${localExchanges} of 3 exchanges today. Sign up to continue.`;
+      } else {
+        document.querySelector('#auth-modal-content h2').textContent = 'Sign in to continue';
+      }
       setTimeout(() => { authEmail.focus(); }, 0);
     }
     function hideAuthModal() {
@@ -287,6 +307,10 @@
       if (tier === 'anonymous') {
         incLocalExchanges();
         console.log('[MuseMirror] Anonymous: localExchanges =', localExchanges);
+        if (localExchanges === 1) {
+          settingsIcon.style.display = 'block';
+          settingsIcon.classList.add('settings-visible');
+        }
       } else {
         await incProfileExchanges();
         await fetchProfile();
@@ -677,12 +701,15 @@
       if (tier === 'anonymous') {
         if (localExchanges > 0) {
           settingsIcon.style.display = 'block';
+          settingsIcon.classList.add('settings-visible');
         } else {
           settingsIcon.style.display = 'none';
+          settingsIcon.classList.remove('settings-visible');
         }
       } else {
         // Authenticated (free or premium)
         settingsIcon.style.display = 'block';
+        settingsIcon.classList.add('settings-visible');
       }
     }
 
