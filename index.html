@@ -210,6 +210,7 @@
     let messageCount = 0;
     let exchangeCount = 0;
     let currentExchangeMessages = 0;
+    let exchangeEnded = false;
 
     // --- DOM references (global) ---
     let settingsIcon, authModal, authEmail, authSendLink, authMessage, authClose;
@@ -251,8 +252,8 @@
 
     function focusInput() {
       console.log('[MuseMirror] focusInput: typeof window.isAnyModalOpen =', typeof window.isAnyModalOpen);
-      if (window.isAnyModalOpen()) {
-        console.log('[MuseMirror] focusInput: Modal is open, not focusing main input.');
+      if (window.isAnyModalOpen() || exchangeEnded) {
+        console.log('[MuseMirror] focusInput: Modal is open or exchange ended, not focusing main input.');
         return;
       }
       hiddenInput.disabled = false;
@@ -279,6 +280,7 @@
     }
     
     async function onExchangeEnd() {
+      exchangeEnded = true;
       currentExchangeMessages = 0;
       exchangeCount++;
       console.log('[MuseMirror] Exchange ended. exchangeCount =', exchangeCount, 'tier =', tier);
@@ -615,6 +617,7 @@
         cursor.style.opacity = '1';
         cursor.style.animation = '';
         cursor.style.transition = '';
+        exchangeEnded = false;
         if (hiddenInput.disabled) {
           console.log('[MuseMirror] [After refresh] Input is DISABLED. This should not happen!');
         } else {
