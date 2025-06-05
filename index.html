@@ -215,7 +215,6 @@
   </button>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <script>
     const supabaseUrl = 'https://grtbltrjiluriwfjcfva.supabase.co';
     const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdydGJsdHJqaWx1cml3ZmpjZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg5NzUzNTAsImV4cCI6MjA2NDU1MTM1MH0.wfPdmrheZ45DPAJqYoO0v8yFnMrt4eX5w6g4EzhBPB4';
@@ -687,68 +686,30 @@
       // Export functionality
       exportButton.onclick = async () => {
         try {
-          // Hide UI elements temporarily
-          settingsIcon.style.display = 'none';
-          exportButton.style.display = 'none';
-
-          // Get the fixed center container
-          const fixedCenter = document.getElementById('fixed-center');
-          const fixedCenterRect = fixedCenter.getBoundingClientRect();
-          const canvasRect = canvasContainer.getBoundingClientRect();
+          // Get all conversation items from the current exchange
+          const items = Array.from(conversation.children);
           
-          // Create a container for the screenshot
-          const container = document.createElement('div');
-          container.style.position = 'absolute';
-          container.style.left = '-9999px';
-          container.style.top = '-9999px';
-          document.body.appendChild(container);
-
-          // Clone the fixed center container and canvas
-          const fixedCenterClone = fixedCenter.cloneNode(true);
-          const canvasClone = canvasContainer.cloneNode(true);
-          
-          // Temporarily change conversation flex direction
-          const conversationClone = fixedCenterClone.querySelector('#conversation');
-          const originalFlexDirection = conversationClone.style.flexDirection;
-          conversationClone.style.flexDirection = 'column';
-          
-          container.appendChild(fixedCenterClone);
-          container.appendChild(canvasClone);
-
-          // Set up the canvas clone
-          const canvasCloneElement = canvasClone.querySelector('canvas');
-          const ctxClone = canvasCloneElement.getContext('2d');
-          ctxClone.drawImage(canvas, 0, 0);
-
-          // Take the screenshot
-          const screenshot = await html2canvas(container, {
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            height: canvasRect.bottom - fixedCenterRect.top,
-            width: Math.max(fixedCenterRect.width, canvasRect.width),
-            x: 0,
-            y: 0
+          // Format the conversation as text
+          let textContent = '';
+          items.forEach((item, index) => {
+            const isUser = item.classList.contains('user-text');
+            const prefix = isUser ? 'You' : 'Muse Mirror';
+            textContent += `${prefix}\n${item.textContent}\n\n`;
           });
 
-          // Clean up
-          document.body.removeChild(container);
-
-          // Show UI elements again
-          settingsIcon.style.display = 'block';
-          exportButton.style.display = 'block';
-
-          // Download the screenshot
+          // Create and download the text file
+          const blob = new Blob([textContent], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.download = `muse-mirror-${new Date().toISOString().slice(0,10)}.png`;
-          link.href = screenshot.toDataURL('image/png');
+          link.download = `muse-mirror-${new Date().toISOString().slice(0,10)}.txt`;
+          link.href = url;
           link.click();
+          
+          // Clean up
+          URL.revokeObjectURL(url);
         } catch (error) {
           console.error('Error exporting:', error);
           alert('Failed to export conversation. Please try again.');
-          // Make sure UI elements are visible again
-          settingsIcon.style.display = 'block';
-          exportButton.style.display = 'block';
         }
       };
 
