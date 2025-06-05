@@ -143,7 +143,6 @@
     }
 
     #settings-icon {
-      display: none;
       position: fixed;
       top: 24px;
       right: 24px;
@@ -307,7 +306,6 @@
         incLocalExchanges();
         console.log('[MuseMirror] Anonymous: localExchanges =', localExchanges);
         if (localExchanges === 1) {
-          settingsIcon.style.display = 'block';
           settingsIcon.classList.add('settings-visible');
         }
       } else {
@@ -318,7 +316,7 @@
       if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
           (tier === 'free' && dailyExchanges >= EXCHANGES.free) ||
           (tier === 'premium' && dailyExchanges >= EXCHANGES.premium)) {
-        settingsIcon.style.display = 'block';
+        settingsIcon.classList.add('settings-visible');
       }
       // Always disable input and cursor after every exchange
       const currentOpacity = window.getComputedStyle(cursor).opacity;
@@ -539,7 +537,7 @@
               }
 
               if (!canSendMessage()) {
-                settingsIcon.style.display = 'block';
+                settingsIcon.classList.add('settings-visible');
               }
             }, 500);
           }, 500);
@@ -679,6 +677,8 @@
 
     // --- UI Tier State ---
     function updateTierUI() {
+      console.log('[MuseMirror] updateTierUI called, tier:', tier, 'localExchanges:', localExchanges);
+      
       // Update account modal content
       if (accountEmail) {
         accountEmail.textContent = user?.email || '';
@@ -702,16 +702,16 @@
       // 3. SHOW for anonymous users after their first exchange
       if (tier === 'anonymous') {
         if (localExchanges > 0) {
-          settingsIcon.style.display = 'block';
           settingsIcon.classList.add('settings-visible');
+          console.log('[MuseMirror] Adding settings-visible class for anonymous user with exchanges');
         } else {
-          settingsIcon.style.display = 'none';
           settingsIcon.classList.remove('settings-visible');
+          console.log('[MuseMirror] Removing settings-visible class for fresh anonymous user');
         }
       } else {
         // Authenticated (free or premium)
-        settingsIcon.style.display = 'block';
         settingsIcon.classList.add('settings-visible');
+        console.log('[MuseMirror] Adding settings-visible class for authenticated user');
       }
     }
 
