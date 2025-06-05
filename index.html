@@ -114,6 +114,8 @@
       display: none;
       opacity: 0;
       transition: opacity 0.3s ease;
+      pointer-events: auto;
+      z-index: 5;
     }
 
     #drawing-canvas {
@@ -440,7 +442,7 @@
           }
         } else {
           // On desktop, allow clicking anywhere except canvas
-          if (e.target !== canvas && !window.isAnyModalOpen()) {
+          if (e.target !== canvas && !e.target.closest('#canvas-container') && !window.isAnyModalOpen()) {
             focusInput();
           }
         }
