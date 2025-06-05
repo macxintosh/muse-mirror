@@ -50,17 +50,8 @@
       width: 2px;
       height: 24px;
       background-color: #333;
-      opacity: 0.2;
-      transition: opacity 0.5s ease-out;
-    }
-
-    #cursor.enabled {
       animation: breathe 4.5s infinite ease-in-out;
-    }
-
-    #cursor.disabled {
-      opacity: 0.2;
-      animation: none;
+      margin-left: 1px;
     }
 
     @keyframes breathe {
@@ -211,7 +202,7 @@
     let localExchanges = 0;
     let localLastDate = null;
     const EXCHANGES = { anonymous: 3, free: 3, premium: 10 };
-    const MESSAGES_PER_EXCHANGE = 4;
+    const MESSAGES_PER_EXCHANGE = 8;
     let isDrawing = false;
     let lastX = 0;
     let lastY = 0;
@@ -264,11 +255,9 @@
         console.log('[MuseMirror] focusInput: Modal is open, not focusing main input.');
         return;
       }
-      if (canSendMessage()) {
-        hiddenInput.disabled = false;
-        hiddenInput.focus();
-        console.log('[MuseMirror] focusInput: Input ENABLED. localExchanges =', localExchanges, 'tier =', tier);
-      }
+      hiddenInput.disabled = false;
+      hiddenInput.focus();
+      console.log('[MuseMirror] focusInput: Input ENABLED (graceful limit mode). localExchanges =', localExchanges, 'tier =', tier);
     }
 
     function showAuthModal() {
@@ -289,114 +278,10 @@
       messageCount = 0;
     }
     
-    // --- UI State Management ---
-    function updateUIState() {
-      // On fresh page load (exchangeCount === 0), always enable input
-      const isFreshPage = exchangeCount === 0;
-      const canSend = isFreshPage ? true : canSendMessage();
-      
-      console.log('[MuseMirror] updateUIState:', {
-        isFreshPage,
-        canSend,
-        currentExchangeMessages,
-        exchangeCount,
-        tier,
-        dailyExchanges,
-        localExchanges,
-        cursorClasses: cursor.classList.toString()
-      });
-      
-      // Update cursor state with smooth transition
-      if (canSend) {
-        // Remove disabled first to allow animation to start
-        cursor.classList.remove('disabled');
-        // Small delay to ensure transition
-        requestAnimationFrame(() => {
-          cursor.classList.add('enabled');
-        });
-      } else {
-        // Remove enabled first to stop animation
-        cursor.classList.remove('enabled');
-        // Small delay to ensure transition
-        requestAnimationFrame(() => {
-          cursor.classList.add('disabled');
-        });
-      }
-
-      // Update input state
-      hiddenInput.disabled = !canSend;
-      if (canSend && !window.isAnyModalOpen()) {
-        hiddenInput.focus();
-      } else {
-        hiddenInput.blur();
-      }
-    }
-
-    function canSendMessage() {
-      // Check if we've already done an exchange in this session
-      const sessionExchangeDone = exchangeCount > 0;
-      
-      // Check daily exchange limits
-      const dailyLimitReached = tier === 'anonymous' 
-        ? localExchanges >= EXCHANGES.anonymous
-        : dailyExchanges >= EXCHANGES[tier];
-
-      // Check per-exchange message limit
-      const exchangeLimitReached = currentExchangeMessages >= MESSAGES_PER_EXCHANGE;
-
-      // Log the detailed state and checks
-      console.log('[MuseMirror] canSendMessage check:', {
-        // Current state
-        tier,
-        currentExchangeMessages,
-        exchangeCount,
-        dailyExchanges,
-        localExchanges,
-        MESSAGES_PER_EXCHANGE,
-        EXCHANGES: EXCHANGES[tier],
-        
-        // Limit checks
-        sessionExchangeDone,
-        dailyLimitReached,
-        exchangeLimitReached,
-        
-        // Detailed breakdown
-        sessionCheck: `exchangeCount > 0: ${exchangeCount} > 0`,
-        dailyLimitCheck: {
-          anonymous: tier === 'anonymous' ? `${localExchanges} >= ${EXCHANGES.anonymous}` : 'N/A',
-          free: tier === 'free' ? `${dailyExchanges} >= ${EXCHANGES.free}` : 'N/A',
-          premium: tier === 'premium' ? `${dailyExchanges} >= ${EXCHANGES.premium}` : 'N/A'
-        },
-        exchangeLimitCheck: `${currentExchangeMessages} >= ${MESSAGES_PER_EXCHANGE}`,
-        
-        // Final result
-        canSend: !sessionExchangeDone && !dailyLimitReached && !exchangeLimitReached,
-        reason: sessionExchangeDone ? 'Session exchange completed - refresh page to start new exchange' :
-                dailyLimitReached ? 'Daily limit reached' : 
-                exchangeLimitReached ? 'Exchange message limit reached' : 
-                'Can send message'
-      });
-
-      // Return false if:
-      // 1. We've already done an exchange in this session (exchangeCount > 0)
-      // 2. We've hit the daily limit
-      // 3. We've hit the message limit for this exchange
-      return !sessionExchangeDone && !dailyLimitReached && !exchangeLimitReached;
-    }
-
     async function onExchangeEnd() {
-      console.log('[MuseMirror] onExchangeEnd called:', {
-        currentExchangeMessages,
-        exchangeCount,
-        tier,
-        dailyExchanges,
-        localExchanges,
-        EXCHANGES: EXCHANGES[tier]
-      });
-
       currentExchangeMessages = 0;
       exchangeCount++;
-      
+      console.log('[MuseMirror] Exchange ended. exchangeCount =', exchangeCount, 'tier =', tier);
       if (tier === 'anonymous') {
         incLocalExchanges();
         console.log('[MuseMirror] Anonymous: localExchanges =', localExchanges);
@@ -405,29 +290,35 @@
         await fetchProfile();
         console.log('[MuseMirror] Authenticated: dailyExchanges =', dailyExchanges, 'tier =', tier);
       }
-      
-      // Check if daily limit reached
-      const dailyLimitReached = tier === 'anonymous'
-        ? localExchanges >= EXCHANGES.anonymous
-        : dailyExchanges >= EXCHANGES[tier];
-
-      if (dailyLimitReached) {
+      if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
+          (tier === 'free' && dailyExchanges >= EXCHANGES.free) ||
+          (tier === 'premium' && dailyExchanges >= EXCHANGES.premium)) {
         settingsIcon.style.display = 'block';
-        console.log('[MuseMirror] Daily limit reached:', {
-          tier,
-          dailyExchanges,
-          localExchanges,
-          EXCHANGES: EXCHANGES[tier]
-        });
       }
+      // Always disable input and cursor after every exchange
+      const currentOpacity = window.getComputedStyle(cursor).opacity;
+      cursor.style.opacity = currentOpacity;
+      cursor.style.animation = 'none';
+      requestAnimationFrame(() => {
+        cursor.style.transition = 'opacity 5s ease-out';
+        cursor.style.opacity = '0';
+      });
+      hiddenInput.disabled = true;
+      hiddenInput.blur();
+      setTimeout(() => {
+        console.log('[MuseMirror] After exchange: canSendMessage =', canSendMessage(), 'currentExchangeMessages =', currentExchangeMessages, 'dailyExchanges =', dailyExchanges, 'tier =', tier);
+      }, 500);
+    }
 
-      // Always show settings icon after exchange ends
-      settingsIcon.style.display = 'block';
-
-      // Always disable input after exchange ends
-      // This will stay disabled until page refresh
-      console.log('[MuseMirror] Exchange completed - input disabled until page refresh');
-      updateUIState();
+    function canSendMessage() {
+      if (tier === 'anonymous') {
+        return localExchanges < EXCHANGES.anonymous && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
+      } else if (tier === 'free') {
+        return dailyExchanges < EXCHANGES.free && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
+      } else if (tier === 'premium') {
+        return dailyExchanges < EXCHANGES.premium && currentExchangeMessages < MESSAGES_PER_EXCHANGE;
+      }
+      return false;
     }
 
     // --- DOMContentLoaded/Onload Handler ---
@@ -451,7 +342,11 @@
           fetchProfile().then(() => {
             console.log(`[MuseMirror] ${eventLabel}: Authenticated user. tier =`, tier, 'dailyExchanges =', dailyExchanges);
             updateTierUI();
-            updateUIState();
+            if (canSendMessage()) {
+              focusInput();
+            } else {
+              hiddenInput.disabled = true;
+            }
           });
         } else {
           user = null;
@@ -461,7 +356,11 @@
           resetSessionCounters();
           console.log(`[MuseMirror] ${eventLabel}: Anonymous user. localExchanges =`, localExchanges);
           updateTierUI();
-          updateUIState();
+          if (canSendMessage()) {
+            focusInput();
+          } else {
+            hiddenInput.disabled = true;
+          }
         }
       }
 
@@ -540,31 +439,19 @@
               responseItem.textContent = getLimitMessage();
               conversation.prepend(responseItem);
               console.log('[MuseMirror] Over daily limit after refresh: showed poetic assistant message.');
-              // Keep input enabled since this is a fresh page
               return;
             }
 
-            // If in an active exchange but over limit, do nothing (exchange will end as usual)
+            // If in an active exchange, proceed as normal
             if (!canSendMessage()) {
-              console.log('[MuseMirror] Cannot send message - over limit:', {
-                currentExchangeMessages,
-                tier,
-                dailyExchanges,
-                localExchanges
-              });
+              // If in the middle of an exchange but over limit, do nothing (exchange will end as usual)
               return;
             }
 
             currentExchangeMessages++;
-            console.log('[MuseMirror] User message sent:', {
-              messageCount,
-              currentExchangeMessages,
-              tier,
-              dailyExchanges,
-              localExchanges
-            });
+            console.log('[MuseMirror] User message sent. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
 
-            // Enforce 4 user messages per exchange
+            // Enforce 4 user messages per exchange (not 8 total)
             if (currentExchangeMessages >= 4) {
               console.log('[MuseMirror] 4-user-message limit reached. Will end exchange after assistant response.');
               // Do not end exchange here; let assistant response complete first
@@ -615,13 +502,7 @@
               responseItem.classList.add('conversation-item', 'response-text');
               responseItem.textContent = responseText;
               conversation.prepend(responseItem);
-              console.log('[MuseMirror] Assistant response added:', {
-                messageCount,
-                currentExchangeMessages,
-                tier,
-                dailyExchanges,
-                localExchanges
-              });
+              console.log('[MuseMirror] Assistant response added. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
 
               // If this was the 4th user message, end the exchange after assistant response is displayed
               if (currentExchangeMessages >= 4) {
@@ -629,8 +510,9 @@
                 await onExchangeEnd();
               }
 
-              // Update UI state after each message
-              updateUIState();
+              if (!canSendMessage()) {
+                settingsIcon.style.display = 'block';
+              }
             }, 500);
           }, 500);
         }
@@ -722,9 +604,23 @@
         }
       });
 
-      // Initial UI state setup - only enable if we haven't done an exchange yet
-      // and we're under the daily limit
-      updateUIState();
+      // After all user state and UI logic (in handleSessionEvent and after updateTierUI/focusInput),
+      // ensure that after a page refresh, the cursor is always visible and input is always enabled.
+      // This should override any disabling from previous exchanges if the page is refreshed.
+      setTimeout(() => {
+        const canSend = canSendMessage();
+        console.log('[MuseMirror] [After refresh] canSendMessage() =', canSend, 'localExchanges =', localExchanges, 'tier =', tier);
+        hiddenInput.disabled = false;
+        hiddenInput.focus();
+        cursor.style.opacity = '1';
+        cursor.style.animation = '';
+        cursor.style.transition = '';
+        if (hiddenInput.disabled) {
+          console.log('[MuseMirror] [After refresh] Input is DISABLED. This should not happen!');
+        } else {
+          console.log('[MuseMirror] [After refresh] Input is ENABLED.');
+        }
+      }, 0);
     };
 
     // --- Fetch Profile ---
@@ -748,19 +644,8 @@
 
     // --- Update Profile Exchange Count ---
     async function incProfileExchanges() {
-      const before = dailyExchanges;
       dailyExchanges++;
-      console.log('[MuseMirror] Incrementing daily exchanges:', {
-        before,
-        after: dailyExchanges,
-        tier,
-        EXCHANGES: EXCHANGES[tier],
-        limitReached: dailyExchanges >= EXCHANGES[tier]
-      });
-      await supabase.from('profiles').update({ 
-        daily_exchanges: dailyExchanges, 
-        last_exchange_date: getToday() 
-      }).eq('id', user.id);
+      await supabase.from('profiles').update({ daily_exchanges: dailyExchanges, last_exchange_date: getToday() }).eq('id', user.id);
     }
 
     // --- UI Tier State ---
@@ -796,9 +681,6 @@
         // Authenticated (free or premium)
         settingsIcon.style.display = 'block';
       }
-
-      // Update UI state after tier changes
-      updateUIState();
     }
 
     function setupCanvas() {
