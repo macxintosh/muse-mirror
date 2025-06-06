@@ -212,6 +212,7 @@
         <div id="account-usage" style="font-size:0.95em; color:#666; margin-bottom:16px;"></div>
         <button id="account-upgrade" style="display:none; font-size:1em; padding:8px 0; border:none; background:#222; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Upgrade to Premium</button>
         <button id="account-manage" style="display:none; font-size:1em; padding:8px 0; border:none; background:#444; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Manage Subscription</button>
+        <button id="account-export" style="display:none; font-size:1em; padding:8px 0; border:none; background:#666; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Export conversation</button>
         <button id="account-logout" style="font-size:0.95em; padding:6px 0; border:none; background:#eee; color:#444; border-radius:5px; width:100%; cursor:pointer;">Log out</button>
       </div>
       <button id="account-close" style="margin-top:18px; background:none; border:none; color:#888; font-size:0.95em; cursor:pointer;">Close</button>
@@ -221,13 +222,6 @@
     <canvas id="drawing-canvas"></canvas>
     <div id="canvas-gradient"></div>
   </div>
-  <button id="export-button" style="display:none; position:fixed; top:24px; right:64px; z-index:10; cursor:pointer; background:none; border:none; padding:0;">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/>
-      <line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
-  </button>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -259,7 +253,6 @@
     let hiddenInput, displayedText, conversation, cursor, canvasContainer, canvas, ctx;
     let accountModal, accountEmail, accountTier, accountUpgrade, accountManage, accountLogout, accountClose, accountUsage;
     let authOtpSection, authOtp, authVerifyOtp;
-    let exportButton;
 
     const fallbackResponses = [
       "My reflections are caught somewhere between worlds. Try again soon."
@@ -340,10 +333,6 @@
           (tier === 'free' && dailyExchanges >= EXCHANGES.free) ||
           (tier === 'premium' && dailyExchanges >= EXCHANGES.premium)) {
         settingsIcon.style.display = 'block';
-      }
-      // Show export button for premium users
-      if (tier === 'premium') {
-        exportButton.style.display = 'block';
       }
       // Always disable input and cursor after every exchange
       const currentOpacity = window.getComputedStyle(cursor).opacity;
@@ -458,7 +447,6 @@
       accountLogout = document.getElementById('account-logout');
       accountClose = document.getElementById('account-close');
       accountUsage = document.getElementById('account-usage');
-      exportButton = document.getElementById('export-button');
 
       // Set up event listeners
       document.addEventListener('click', (e) => {
@@ -702,7 +690,7 @@
       };
 
       // Export functionality
-      exportButton.onclick = async () => {
+      document.getElementById('account-export').onclick = async () => {
         try {
           // Get all conversation items from the current exchange
           const items = Array.from(conversation.children);
@@ -748,12 +736,15 @@
             if (tier === 'free') {
               accountUpgrade.style.display = 'block';
               accountManage.style.display = 'none';
+              document.getElementById('account-export').style.display = 'none';
             } else if (tier === 'premium') {
               accountUpgrade.style.display = 'none';
               accountManage.style.display = 'block';
+              document.getElementById('account-export').style.display = 'block';
             } else {
               accountUpgrade.style.display = 'none';
               accountManage.style.display = 'none';
+              document.getElementById('account-export').style.display = 'none';
             }
             accountModal.style.display = 'flex';
           }
@@ -828,12 +819,15 @@
         if (tier === 'free') {
           accountUpgrade.style.display = 'block';
           accountManage.style.display = 'none';
+          document.getElementById('account-export').style.display = 'none';
         } else if (tier === 'premium') {
           accountUpgrade.style.display = 'none';
           accountManage.style.display = 'block';
+          document.getElementById('account-export').style.display = 'block';
         } else {
           accountUpgrade.style.display = 'none';
           accountManage.style.display = 'none';
+          document.getElementById('account-export').style.display = 'none';
         }
       }
 
