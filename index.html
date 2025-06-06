@@ -692,34 +692,43 @@
       // Export functionality
       document.getElementById('account-export').onclick = async () => {
         try {
-          // Get all conversation items from the current exchange
+          // Get conversation text
           const items = Array.from(conversation.children);
-          
-          // Format the conversation as text (reverse array to get chronological order)
           let textContent = '';
           items.reverse().forEach((item) => {
             const isUser = item.classList.contains('user-text');
             const prefix = isUser ? 'You' : 'Muse Mirror';
-            textContent += `${prefix}: ${item.textContent}\n\n\n`;
+            textContent += `${prefix}: ${item.textContent}\n\n`;
           });
 
-          // Create and download the text file
-          const blob = new Blob([textContent], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
           const now = new Date();
           const timestamp = now.toISOString().slice(0,10) + '-' + 
             String(now.getHours()).padStart(2, '0') + 
             String(now.getMinutes()).padStart(2, '0');
-          link.download = `muse-mirror-${timestamp}.txt`;
-          link.href = url;
-          link.click();
-          
-          // Clean up
-          URL.revokeObjectURL(url);
+
+          // Download conversation text
+          const textBlob = new Blob([textContent], { type: 'text/plain' });
+          const textUrl = URL.createObjectURL(textBlob);
+          const textLink = document.createElement('a');
+          textLink.download = `muse-mirror-conversation-${timestamp}.txt`;
+          textLink.href = textUrl;
+          textLink.click();
+          URL.revokeObjectURL(textUrl);
+
+          // Download drawing if it exists
+          if (canvasActivated && canvas.width > 0) {
+            canvas.toBlob((blob) => {
+              const imgUrl = URL.createObjectURL(blob);
+              const imgLink = document.createElement('a');
+              imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
+              imgLink.href = imgUrl;
+              imgLink.click();
+              URL.revokeObjectURL(imgUrl);
+            });
+          }
         } catch (error) {
           console.error('Error exporting:', error);
-          alert('Failed to export conversation. Please try again.');
+          alert('Failed to export. Please try again.');
         }
       };
 
