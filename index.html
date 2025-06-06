@@ -706,28 +706,33 @@
             String(now.getHours()).padStart(2, '0') + 
             String(now.getMinutes()).padStart(2, '0');
 
-          // Download conversation text
+          // Download conversation text first
           const textBlob = new Blob([textContent], { type: 'text/plain' });
           const textUrl = URL.createObjectURL(textBlob);
           const textLink = document.createElement('a');
           textLink.download = `muse-mirror-conversation-${timestamp}.txt`;
           textLink.href = textUrl;
-          textLink.click();
-          URL.revokeObjectURL(textUrl);
 
-          // Download drawing if it exists
-          if (canvasActivated && canvas.width > 0) {
+          // Wait for text download to be initiated, then clean up and do image
+          textLink.addEventListener('click', () => {
             setTimeout(() => {
-              canvas.toBlob((blob) => {
-                const imgUrl = URL.createObjectURL(blob);
-                const imgLink = document.createElement('a');
-                imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
-                imgLink.href = imgUrl;
-                imgLink.click();
-                URL.revokeObjectURL(imgUrl);
-              });
-            }, 1000);
-          }
+              URL.revokeObjectURL(textUrl);
+              
+              // Now do the drawing download
+              if (canvasActivated && canvas.width > 0) {
+                canvas.toBlob((blob) => {
+                  const imgUrl = URL.createObjectURL(blob);
+                  const imgLink = document.createElement('a');
+                  imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
+                  imgLink.href = imgUrl;
+                  imgLink.click();
+                  URL.revokeObjectURL(imgUrl);
+                });
+              }
+            }, 1500);
+          });
+
+          textLink.click();
         } catch (error) {
           console.error('Error exporting:', error);
           alert('Failed to export. Please try again.');
