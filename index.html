@@ -144,6 +144,21 @@
       opacity: 1 !important;
     }
 
+    /* Mobile-friendly settings icon */
+    @media (hover: hover) {
+      #settings-icon:hover div {
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      #settings-icon {
+        padding: 16px !important;
+        top: 20px !important;
+        right: 20px !important;
+      }
+    }
+
     #footer-hint {
       position: fixed;
       bottom: 8px;
@@ -167,11 +182,8 @@
       <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
     </div>
   </div>
-  <div id="settings-icon" style="display:none; position:fixed; top:24px; right:24px; z-index:10; cursor:pointer;">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3.5"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09c0 .66.39 1.26 1 1.51a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09c.22.61.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09c-.66 0-1.26.39-1.51 1z"/>
-    </svg>
+  <div id="settings-icon" style="display:none; position:fixed; top:24px; right:24px; z-index:10; cursor:pointer; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; padding:12px;">
+    <div style="width:6px; height:6px; background:#333; border-radius:50%; opacity:0.6; transition:opacity 0.2s ease;"></div>
   </div>
   <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.96); z-index:100; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:10px; box-shadow:0 2px 16px rgba(0,0,0,0.07); padding:32px 24px; min-width:260px; max-width:90vw; display:flex; flex-direction:column; align-items:center;">
