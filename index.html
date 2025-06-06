@@ -692,7 +692,6 @@
       // Export functionality
       document.getElementById('account-export').onclick = async () => {
         try {
-          // Get conversation text
           const items = Array.from(conversation.children);
           let textContent = '';
           items.reverse().forEach((item) => {
@@ -706,33 +705,55 @@
             String(now.getHours()).padStart(2, '0') + 
             String(now.getMinutes()).padStart(2, '0');
 
-          // Download conversation text first
-          const textBlob = new Blob([textContent], { type: 'text/plain' });
-          const textUrl = URL.createObjectURL(textBlob);
-          const textLink = document.createElement('a');
-          textLink.download = `muse-mirror-conversation-${timestamp}.txt`;
-          textLink.href = textUrl;
-
-          // Wait for text download to be initiated, then clean up and do image
-          textLink.addEventListener('click', () => {
-            setTimeout(() => {
+          // Check if there's a drawing first
+          if (canvasActivated && canvas.width > 0) {
+            // Ask user which one they want, or do them separately
+            const choice = confirm('Export conversation text first? (Cancel for drawing first)');
+            
+            if (choice) {
+              // Download text
+              const textBlob = new Blob([textContent], { type: 'text/plain' });
+              const textUrl = URL.createObjectURL(textBlob);
+              const textLink = document.createElement('a');
+              textLink.download = `muse-mirror-conversation-${timestamp}.txt`;
+              textLink.href = textUrl;
+              textLink.click();
               URL.revokeObjectURL(textUrl);
               
-              // Now do the drawing download
-              if (canvasActivated && canvas.width > 0) {
-                canvas.toBlob((blob) => {
-                  const imgUrl = URL.createObjectURL(blob);
-                  const imgLink = document.createElement('a');
-                  imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
-                  imgLink.href = imgUrl;
-                  imgLink.click();
-                  URL.revokeObjectURL(imgUrl);
-                });
-              }
-            }, 1500);
-          });
-
-          textLink.click();
+              // Offer drawing next
+              setTimeout(() => {
+                if (confirm('Now download the drawing?')) {
+                  canvas.toBlob((blob) => {
+                    const imgUrl = URL.createObjectURL(blob);
+                    const imgLink = document.createElement('a');
+                    imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
+                    imgLink.href = imgUrl;
+                    imgLink.click();
+                    URL.revokeObjectURL(imgUrl);
+                  });
+                }
+              }, 1000);
+            } else {
+              // Download drawing first
+              canvas.toBlob((blob) => {
+                const imgUrl = URL.createObjectURL(blob);
+                const imgLink = document.createElement('a');
+                imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
+                imgLink.href = imgUrl;
+                imgLink.click();
+                URL.revokeObjectURL(imgUrl);
+              });
+            }
+          } else {
+            // No drawing, just download text
+            const textBlob = new Blob([textContent], { type: 'text/plain' });
+            const textUrl = URL.createObjectURL(textBlob);
+            const textLink = document.createElement('a');
+            textLink.download = `muse-mirror-conversation-${timestamp}.txt`;
+            textLink.href = textUrl;
+            textLink.click();
+            URL.revokeObjectURL(textUrl);
+          }
         } catch (error) {
           console.error('Error exporting:', error);
           alert('Failed to export. Please try again.');
