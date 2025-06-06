@@ -213,6 +213,7 @@
         <button id="account-upgrade" style="display:none; font-size:1em; padding:8px 0; border:none; background:#222; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Upgrade to Premium</button>
         <button id="account-manage" style="display:none; font-size:1em; padding:8px 0; border:none; background:#444; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Manage Subscription</button>
         <button id="account-export" style="display:none; font-size:1em; padding:8px 0; border:none; background:#666; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Export conversation</button>
+        <button id="account-export-drawing" style="display:none; font-size:1em; padding:8px 0; border:none; background:#888; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Export drawing</button>
         <button id="account-logout" style="font-size:0.95em; padding:6px 0; border:none; background:#eee; color:#444; border-radius:5px; width:100%; cursor:pointer;">Log out</button>
       </div>
       <button id="account-close" style="margin-top:18px; background:none; border:none; color:#888; font-size:0.95em; cursor:pointer;">Close</button>
@@ -705,58 +706,38 @@
             String(now.getHours()).padStart(2, '0') + 
             String(now.getMinutes()).padStart(2, '0');
 
-          // Check if there's a drawing first
-          if (canvasActivated && canvas.width > 0) {
-            // Ask user which one they want, or do them separately
-            const choice = confirm('Export conversation text first? (Cancel for drawing first)');
-            
-            if (choice) {
-              // Download text
-              const textBlob = new Blob([textContent], { type: 'text/plain' });
-              const textUrl = URL.createObjectURL(textBlob);
-              const textLink = document.createElement('a');
-              textLink.download = `muse-mirror-conversation-${timestamp}.txt`;
-              textLink.href = textUrl;
-              textLink.click();
-              URL.revokeObjectURL(textUrl);
-              
-              // Offer drawing next
-              setTimeout(() => {
-                if (confirm('Now download the drawing?')) {
-                  canvas.toBlob((blob) => {
-                    const imgUrl = URL.createObjectURL(blob);
-                    const imgLink = document.createElement('a');
-                    imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
-                    imgLink.href = imgUrl;
-                    imgLink.click();
-                    URL.revokeObjectURL(imgUrl);
-                  });
-                }
-              }, 1000);
-            } else {
-              // Download drawing first
-              canvas.toBlob((blob) => {
-                const imgUrl = URL.createObjectURL(blob);
-                const imgLink = document.createElement('a');
-                imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
-                imgLink.href = imgUrl;
-                imgLink.click();
-                URL.revokeObjectURL(imgUrl);
-              });
-            }
-          } else {
-            // No drawing, just download text
-            const textBlob = new Blob([textContent], { type: 'text/plain' });
-            const textUrl = URL.createObjectURL(textBlob);
-            const textLink = document.createElement('a');
-            textLink.download = `muse-mirror-conversation-${timestamp}.txt`;
-            textLink.href = textUrl;
-            textLink.click();
-            URL.revokeObjectURL(textUrl);
-          }
+          const textBlob = new Blob([textContent], { type: 'text/plain' });
+          const textUrl = URL.createObjectURL(textBlob);
+          const textLink = document.createElement('a');
+          textLink.download = `muse-mirror-conversation-${timestamp}.txt`;
+          textLink.href = textUrl;
+          textLink.click();
+          URL.revokeObjectURL(textUrl);
         } catch (error) {
           console.error('Error exporting:', error);
-          alert('Failed to export. Please try again.');
+          alert('Failed to export conversation. Please try again.');
+        }
+      };
+
+      // Drawing export functionality
+      document.getElementById('account-export-drawing').onclick = async () => {
+        try {
+          const now = new Date();
+          const timestamp = now.toISOString().slice(0,10) + '-' + 
+            String(now.getHours()).padStart(2, '0') + 
+            String(now.getMinutes()).padStart(2, '0');
+
+          canvas.toBlob((blob) => {
+            const imgUrl = URL.createObjectURL(blob);
+            const imgLink = document.createElement('a');
+            imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
+            imgLink.href = imgUrl;
+            imgLink.click();
+            URL.revokeObjectURL(imgUrl);
+          });
+        } catch (error) {
+          console.error('Error exporting drawing:', error);
+          alert('Failed to export drawing. Please try again.');
         }
       };
 
@@ -774,14 +755,22 @@
               accountUpgrade.style.display = 'block';
               accountManage.style.display = 'none';
               document.getElementById('account-export').style.display = 'none';
+              document.getElementById('account-export-drawing').style.display = 'none';
             } else if (tier === 'premium') {
               accountUpgrade.style.display = 'none';
               accountManage.style.display = 'block';
               document.getElementById('account-export').style.display = 'block';
+              // Show drawing export only if there's actually a drawing
+              if (canvasActivated && canvas.width > 0) {
+                document.getElementById('account-export-drawing').style.display = 'block';
+              } else {
+                document.getElementById('account-export-drawing').style.display = 'none';
+              }
             } else {
               accountUpgrade.style.display = 'none';
               accountManage.style.display = 'none';
               document.getElementById('account-export').style.display = 'none';
+              document.getElementById('account-export-drawing').style.display = 'none';
             }
             accountModal.style.display = 'flex';
           }
@@ -857,14 +846,22 @@
           accountUpgrade.style.display = 'block';
           accountManage.style.display = 'none';
           document.getElementById('account-export').style.display = 'none';
+          document.getElementById('account-export-drawing').style.display = 'none';
         } else if (tier === 'premium') {
           accountUpgrade.style.display = 'none';
           accountManage.style.display = 'block';
           document.getElementById('account-export').style.display = 'block';
+          // Show drawing export only if there's actually a drawing
+          if (canvasActivated && canvas.width > 0) {
+            document.getElementById('account-export-drawing').style.display = 'block';
+          } else {
+            document.getElementById('account-export-drawing').style.display = 'none';
+          }
         } else {
           accountUpgrade.style.display = 'none';
           accountManage.style.display = 'none';
           document.getElementById('account-export').style.display = 'none';
+          document.getElementById('account-export-drawing').style.display = 'none';
         }
       }
 
