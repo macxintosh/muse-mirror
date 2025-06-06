@@ -717,14 +717,16 @@
 
           // Download drawing if it exists
           if (canvasActivated && canvas.width > 0) {
-            canvas.toBlob((blob) => {
-              const imgUrl = URL.createObjectURL(blob);
-              const imgLink = document.createElement('a');
-              imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
-              imgLink.href = imgUrl;
-              imgLink.click();
-              URL.revokeObjectURL(imgUrl);
-            });
+            setTimeout(() => {
+              canvas.toBlob((blob) => {
+                const imgUrl = URL.createObjectURL(blob);
+                const imgLink = document.createElement('a');
+                imgLink.download = `muse-mirror-drawing-${timestamp}.png`;
+                imgLink.href = imgUrl;
+                imgLink.click();
+                URL.revokeObjectURL(imgUrl);
+              });
+            }, 1000);
           }
         } catch (error) {
           console.error('Error exporting:', error);
