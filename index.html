@@ -289,14 +289,11 @@
     }
 
     function focusInput() {
-      console.log('[MuseMirror] focusInput: typeof window.isAnyModalOpen =', typeof window.isAnyModalOpen);
       if (window.isAnyModalOpen() || exchangeEnded) {
-        console.log('[MuseMirror] focusInput: Modal is open or exchange ended, not focusing main input.');
         return;
       }
       hiddenInput.disabled = false;
       hiddenInput.focus();
-      console.log('[MuseMirror] focusInput: Input ENABLED (graceful limit mode). localExchanges =', localExchanges, 'tier =', tier);
     }
 
     function showAuthModal() {
@@ -321,14 +318,11 @@
       exchangeEnded = true;
       currentExchangeMessages = 0;
       exchangeCount++;
-      console.log('[MuseMirror] Exchange ended. exchangeCount =', exchangeCount, 'tier =', tier);
       if (tier === 'anonymous') {
         incLocalExchanges();
-        console.log('[MuseMirror] Anonymous: localExchanges =', localExchanges);
       } else {
         await incProfileExchanges();
         await fetchProfile();
-        console.log('[MuseMirror] Authenticated: dailyExchanges =', dailyExchanges, 'tier =', tier);
       }
       if ((tier === 'anonymous' && localExchanges >= EXCHANGES.anonymous) ||
           (tier === 'free' && dailyExchanges >= EXCHANGES.free) ||
@@ -345,9 +339,6 @@
       });
       hiddenInput.disabled = true;
       hiddenInput.blur();
-      setTimeout(() => {
-        console.log('[MuseMirror] After exchange: canSendMessage =', canSendMessage(), 'currentExchangeMessages =', currentExchangeMessages, 'dailyExchanges =', dailyExchanges, 'tier =', tier);
-      }, 500);
     }
 
     function canSendMessage() {
@@ -374,13 +365,11 @@
         updateTierUI();
       }
 
-      // Enhanced Supabase Auth event handler for debugging and session refresh
+      // Enhanced Supabase Auth event handler
       function handleSessionEvent(session, eventLabel) {
-        console.log(`[MuseMirror] handleSessionEvent called from ${eventLabel}. Session:`, session);
         if (session && session.user) {
           user = session.user;
           fetchProfile().then(() => {
-            console.log(`[MuseMirror] ${eventLabel}: Authenticated user. tier =`, tier, 'dailyExchanges =', dailyExchanges);
             updateTierUI();
             if (canSendMessage()) {
               focusInput();
@@ -394,7 +383,6 @@
           tier = 'anonymous';
           loadLocalExchanges();
           resetSessionCounters();
-          console.log(`[MuseMirror] ${eventLabel}: Anonymous user. localExchanges =`, localExchanges);
           updateTierUI();
           if (canSendMessage()) {
             focusInput();
@@ -405,21 +393,20 @@
       }
 
       supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('[MuseMirror] Auth state changed:', event, session);
         if (event === 'TOKEN_REFRESHED') {
-          console.log('[MuseMirror] Session token refreshed.');
+          // Session token refreshed
         }
         if (event === 'SIGNED_OUT') {
-          console.warn('[MuseMirror] User was signed out unexpectedly.');
+          // User was signed out unexpectedly
         }
         if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
           handleSessionEvent(session, event);
         }
         if (event === 'PASSWORD_RECOVERY') {
-          console.log('[MuseMirror] Password recovery event.');
+          // Password recovery event
         }
         if (event === 'USER_UPDATED') {
-          console.log('[MuseMirror] User updated.');
+          // User updated
         }
       });
 
@@ -495,7 +482,6 @@
               responseItem.classList.add('conversation-item', 'response-text');
               responseItem.textContent = getLimitMessage();
               conversation.prepend(responseItem);
-              console.log('[MuseMirror] Over daily limit after refresh: showed poetic assistant message.');
               return;
             }
 
@@ -506,11 +492,9 @@
             }
 
             currentExchangeMessages++;
-            console.log('[MuseMirror] User message sent. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
 
             // Enforce 4 user messages per exchange (not 8 total)
             if (currentExchangeMessages >= 4) {
-              console.log('[MuseMirror] 4-user-message limit reached. Will end exchange after assistant response.');
               // Do not end exchange here; let assistant response complete first
             }
 
@@ -559,11 +543,9 @@
               responseItem.classList.add('conversation-item', 'response-text');
               responseItem.textContent = responseText;
               conversation.prepend(responseItem);
-              console.log('[MuseMirror] Assistant response added. messageCount =', messageCount, 'currentExchangeMessages =', currentExchangeMessages);
 
               // If this was the 4th user message, end the exchange after assistant response is displayed
               if (currentExchangeMessages >= 4) {
-                console.log('[MuseMirror] Ending exchange after 4th assistant response.');
                 await onExchangeEnd();
               }
 
@@ -804,18 +786,12 @@
       // This should override any disabling from previous exchanges if the page is refreshed.
       setTimeout(() => {
         const canSend = canSendMessage();
-        console.log('[MuseMirror] [After refresh] canSendMessage() =', canSend, 'localExchanges =', localExchanges, 'tier =', tier);
         hiddenInput.disabled = false;
         hiddenInput.focus();
         cursor.style.opacity = '1';
         cursor.style.animation = '';
         cursor.style.transition = '';
         exchangeEnded = false;
-        if (hiddenInput.disabled) {
-          console.log('[MuseMirror] [After refresh] Input is DISABLED. This should not happen!');
-        } else {
-          console.log('[MuseMirror] [After refresh] Input is ENABLED.');
-        }
       }, 0);
     };
 
