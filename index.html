@@ -15,7 +15,7 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: white;
+      background-color: #0a0a0a;
       height: 100vh;
       width: 100vw;
       overflow: hidden;
@@ -41,7 +41,7 @@
       font-weight: 300;
       font-size: 20px;
       letter-spacing: -0.01em;
-      color: #333;
+      color: #e0e0e0;
       white-space: pre;
     }
 
@@ -49,7 +49,7 @@
       display: inline-block;
       width: 2px;
       height: 24px;
-      background-color: #333;
+      background-color: #e0e0e0;
       animation: breathe 4.5s infinite ease-in-out;
       margin-left: 1px;
     }
@@ -88,11 +88,11 @@
     }
 
     .user-text {
-      color: #333;
+      color: #e0e0e0;
     }
 
     .response-text {
-      color: #666;
+      color: #9a9a9a;
       opacity: 0;
       animation: fadeIn 2s forwards;
     }
@@ -122,7 +122,7 @@
       width: 100%;
       height: 100%;
       cursor: crosshair;
-      background-color: white;
+      background-color: #0a0a0a;
     }
 
     #canvas-gradient {
@@ -133,11 +133,11 @@
       height: calc(100% + 2px);
       pointer-events: none;
       background: linear-gradient(to bottom,
-        rgba(255, 255, 255, 1) 0%,
-        rgba(255, 255, 255, 0.96) 4%,
-        rgba(255, 255, 255, 0.8) 10%,
-        rgba(255, 255, 255, 0.4) 18%,
-        rgba(255, 255, 255, 0) 30%);
+        rgba(10, 10, 10, 1) 0%,
+        rgba(10, 10, 10, 0.96) 4%,
+        rgba(10, 10, 10, 0.8) 10%,
+        rgba(10, 10, 10, 0.4) 18%,
+        rgba(10, 10, 10, 0) 30%);
     }
 
     .canvas-visible {
@@ -168,11 +168,30 @@
       left: 50%;
       transform: translateX(-50%);
       font-size: 11px;
-      color: #666;
+      color: #9a9a9a;
       opacity: 1;
       font-weight: 300;
       pointer-events: none;
       z-index: 1000;
+    }
+
+    /* Dark mode scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #404040;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #505050;
     }
   </style>
 </head>
@@ -188,35 +207,35 @@
   <div id="settings-icon" style="display:none; position:fixed; top:24px; right:24px; z-index:10; cursor:pointer; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; padding:12px;">
     <div style="width:6px; height:6px; background:#333; border-radius:50%; opacity:0.6; transition:opacity 0.2s ease;"></div>
   </div>
-  <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.96); z-index:100; align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:10px; box-shadow:0 2px 16px rgba(0,0,0,0.07); padding:32px 24px; min-width:260px; max-width:90vw; display:flex; flex-direction:column; align-items:center;">
+  <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(10,10,10,0.96); z-index:100; align-items:center; justify-content:center;">
+    <div style="background:#1a1a1a; border-radius:10px; box-shadow:0 2px 16px rgba(0,0,0,0.2); padding:32px 24px; min-width:260px; max-width:90vw; display:flex; flex-direction:column; align-items:center;">
       <div id="auth-modal-content">
-        <h2 style="font-size:1.1em; font-weight:400; margin-bottom:18px; color:#222;">Sign in to continue</h2>
-        <input id="auth-email" type="email" placeholder="your@email.com" style="font-size:1em; padding:8px 12px; border:1px solid #ddd; border-radius:5px; outline:none; margin-bottom:12px; width:100%;" />
-        <button id="auth-send-link" style="font-size:1em; padding:8px 0; border:none; background:#222; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:12px;">Send magic link</button>
+        <h2 style="font-size:1.1em; font-weight:400; margin-bottom:18px; color:#e0e0e0;">Sign in to continue</h2>
+        <input id="auth-email" type="email" placeholder="your@email.com" style="font-size:1em; padding:8px 12px; border:1px solid #404040; border-radius:5px; outline:none; margin-bottom:12px; width:100%; background:#2a2a2a; color:#e0e0e0;" />
+        <button id="auth-send-link" style="font-size:1em; padding:8px 0; border:none; background:#404040; color:#e0e0e0; border-radius:5px; width:100%; cursor:pointer; margin-bottom:12px;">Send magic link</button>
         <div id="auth-otp-section" style="display:none; margin-bottom:12px;">
-          <input id="auth-otp" type="text" placeholder="Enter 6-digit code" maxlength="6" style="font-size:1em; padding:8px 12px; border:1px solid #ddd; border-radius:5px; outline:none; margin-bottom:8px; width:100%;" />
-          <button id="auth-verify-otp" style="font-size:1em; padding:8px 0; border:none; background:#333; color:white; border-radius:5px; width:100%; cursor:pointer;">Verify code</button>
+          <input id="auth-otp" type="text" placeholder="Enter 6-digit code" maxlength="6" style="font-size:1em; padding:8px 12px; border:1px solid #404040; border-radius:5px; outline:none; margin-bottom:8px; width:100%; background:#2a2a2a; color:#e0e0e0;" />
+          <button id="auth-verify-otp" style="font-size:1em; padding:8px 0; border:none; background:#404040; color:#e0e0e0; border-radius:5px; width:100%; cursor:pointer;">Verify code</button>
         </div>
-        <div id="auth-message" style="margin-top:12px; font-size:0.95em; color:#444; min-height:1.2em;"></div>
+        <div id="auth-message" style="margin-top:12px; font-size:0.95em; color:#9a9a9a; min-height:1.2em;"></div>
       </div>
-      <button id="auth-close" style="margin-top:18px; background:none; border:none; color:#888; font-size:0.95em; cursor:pointer;">Cancel</button>
+      <button id="auth-close" style="margin-top:18px; background:none; border:none; color:#9a9a9a; font-size:0.95em; cursor:pointer;">Cancel</button>
     </div>
   </div>
-  <div id="account-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.96); z-index:100; align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:10px; box-shadow:0 2px 16px rgba(0,0,0,0.07); padding:32px 24px; min-width:260px; max-width:90vw; display:flex; flex-direction:column; align-items:center;">
+  <div id="account-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(10,10,10,0.96); z-index:100; align-items:center; justify-content:center;">
+    <div style="background:#1a1a1a; border-radius:10px; box-shadow:0 2px 16px rgba(0,0,0,0.2); padding:32px 24px; min-width:260px; max-width:90vw; display:flex; flex-direction:column; align-items:center;">
       <div id="account-modal-content">
-        <h2 style="font-size:1.1em; font-weight:400; margin-bottom:18px; color:#222;">Account</h2>
-        <div id="account-email" style="font-size:1em; color:#333; margin-bottom:8px;"></div>
-        <div id="account-tier" style="font-size:0.98em; color:#666; margin-bottom:8px;"></div>
-        <div id="account-usage" style="font-size:0.95em; color:#666; margin-bottom:16px;"></div>
-        <button id="account-upgrade" style="display:none; font-size:1em; padding:8px 0; border:none; background:#222; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Upgrade to Premium</button>
-        <button id="account-manage" style="display:none; font-size:1em; padding:8px 0; border:none; background:#444; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Manage Subscription</button>
-        <button id="account-export" style="display:none; font-size:1em; padding:8px 0; border:none; background:#666; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Export conversation</button>
-        <button id="account-export-drawing" style="display:none; font-size:1em; padding:8px 0; border:none; background:#888; color:white; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Export drawing</button>
-        <button id="account-logout" style="font-size:0.95em; padding:6px 0; border:none; background:#eee; color:#444; border-radius:5px; width:100%; cursor:pointer;">Log out</button>
+        <h2 style="font-size:1.1em; font-weight:400; margin-bottom:18px; color:#e0e0e0;">Account</h2>
+        <div id="account-email" style="font-size:1em; color:#e0e0e0; margin-bottom:8px;"></div>
+        <div id="account-tier" style="font-size:0.98em; color:#9a9a9a; margin-bottom:8px;"></div>
+        <div id="account-usage" style="font-size:0.95em; color:#9a9a9a; margin-bottom:16px;"></div>
+        <button id="account-upgrade" style="display:none; font-size:1em; padding:8px 0; border:none; background:#404040; color:#e0e0e0; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Upgrade to Premium</button>
+        <button id="account-manage" style="display:none; font-size:1em; padding:8px 0; border:none; background:#404040; color:#e0e0e0; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Manage Subscription</button>
+        <button id="account-export" style="display:none; font-size:1em; padding:8px 0; border:none; background:#404040; color:#e0e0e0; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Export conversation</button>
+        <button id="account-export-drawing" style="display:none; font-size:1em; padding:8px 0; border:none; background:#404040; color:#e0e0e0; border-radius:5px; width:100%; cursor:pointer; margin-bottom:10px;">Export drawing</button>
+        <button id="account-logout" style="font-size:0.95em; padding:6px 0; border:none; background:#2a2a2a; color:#9a9a9a; border-radius:5px; width:100%; cursor:pointer;">Log out</button>
       </div>
-      <button id="account-close" style="margin-top:18px; background:none; border:none; color:#888; font-size:0.95em; cursor:pointer;">Close</button>
+      <button id="account-close" style="margin-top:18px; background:none; border:none; color:#9a9a9a; font-size:0.95em; cursor:pointer;">Close</button>
     </div>
   </div>
   <div id="canvas-container">
@@ -879,7 +898,7 @@
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#000';
+      ctx.strokeStyle = '#e0e0e0';
     }
 
     function startDrawing(e) {
