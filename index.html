@@ -728,20 +728,20 @@
             String(now.getHours()).padStart(2, '0') + 
             String(now.getMinutes()).padStart(2, '0');
 
-          // Create a temporary canvas with white background
+          // Create a temporary canvas with black background
           const tempCanvas = document.createElement('canvas');
           const tempCtx = tempCanvas.getContext('2d');
           tempCanvas.width = canvas.width;
           tempCanvas.height = canvas.height;
 
-          // Fill with white background
-          tempCtx.fillStyle = 'white';
+          // Fill with black background
+          tempCtx.fillStyle = '#0a0a0a';
           tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
           // Draw the original canvas on top
           tempCtx.drawImage(canvas, 0, 0);
 
-          // Export the version with white background
+          // Export the version with black background
           tempCanvas.toBlob((blob) => {
             const imgUrl = URL.createObjectURL(blob);
             const imgLink = document.createElement('a');
